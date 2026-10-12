@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-10-12T03:29:36.499Z"
+last_updated: "2026-10-12T03:31:39.395Z"
 last_activity: 2026-10-12
 progress:
   total_phases: 7
@@ -68,6 +68,7 @@ Recent decisions affecting current work:
 - [Phase 01]: [01-02] StackContextManager registered explicitly; A9 proven, no Zone.js
 - [Phase 01]: [01-02] Added web/Dockerfile.dockerignore: web/.dockerignore is ignored with repo-root build context
 - [Phase ?]: 01-03: managed key is label-only; conventions grep gate exempts _test.go
+- [Phase 1]: Build system: convert Makefile to Bazel (bzlmod) incl. stack orchestration; Makefile removed (user request after wave 2) — User-directed; remaining plans 01-05..01-08 command references updated to bazel equivalents
 
 ### Pending Todos
 
