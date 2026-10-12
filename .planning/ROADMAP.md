@@ -33,7 +33,7 @@ Ephematool is built as vertical MVP slices, each leaving an SRE with a new end-t
   2. After one dashboard page load and API call, the SRE can find the resulting trace, a related metric, and correlated logs for the API, worker, and dashboard in the local Grafana stack
   3. A fresh checkout starts the whole stack (API, worker, dashboard, collector, backends) with one command and telemetry flows without extra configuration
 
-**Plans:** 8/8 plans complete
+**Plans:** 9/8 plans complete
 Plans:
 **Wave 1**
 
@@ -56,7 +56,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 01-08-PLAN.md — Phase gate: Grafana dashboard + correlation, redaction, fresh-checkout, make verify, real login check
+- [x] 01-08-PLAN.md — Phase gate: Grafana dashboard + correlation, redaction, fresh-checkout, make verify, real login check
 
 **UI hint**: yes
 
@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Telemetry Spine & GitHub Login | 8/8 | Complete   | 2026-10-12 |
+| 1. Telemetry Spine & GitHub Login | 9/8 | Complete   | 2026-10-12 |
 | 2. Create a Secure Preview Environment | 0/TBD | Not started | - |
 | 3. Inventory, Lifecycle & Destroy | 0/TBD | Not started | - |
 | 4. Live Health & Drift Detection | 0/TBD | Not started | - |

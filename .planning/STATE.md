@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-10-12T06:01:22.511Z"
+status: verifying
+last_updated: "2026-10-12T06:29:25.904Z"
 last_activity: 2026-10-12
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 8
-  completed_plans: 8
+  completed_plans: 9
   percent: 14
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 
 Phase: 1 (Telemetry Spine & GitHub Login) — EXECUTING
 Plan: 8 of 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-12
 
 Progress: [██████████] 100%
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Phase 01 P03 | 25min | 3 tasks | 15 files |
 | Phase 01 P05 | 45min | 3 tasks | 23 files |
 | Phase 01 P06 | 50min | 3 tasks | 22 files |
+| Phase 1 P08 | multi-session | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 1]: Build system: convert Makefile to Bazel (bzlmod) incl. stack orchestration; Makefile removed (user request after wave 2) — User-directed; remaining plans 01-05..01-08 command references updated to bazel equivalents
 - [Phase 01]: 01-05: Status page mounts only after /api/me succeeds; /api/me 401 is not counted as ui.api_error
 - [Phase 01]: 01-05: nginx OTLP proxy uses a named upstream (variable proxy_pass needs no resolver)
+- [Phase 1]: Redis spans never record command text (WithDBStatement(false)); redaction check guards it
+- [Phase 1]: PING_THROTTLE=0 in e2e overlay only: global throttle raced parallel specs
 
 ### Pending Todos
 
@@ -84,6 +87,7 @@ None yet.
 - [Phase 2]: Resolve GitHub workflow_dispatch run-ID behavior across API versions; define team/repo ownership model.
 - [Phase 2]: Decide cluster/cloud target (OIDC, CNI NetworkPolicy support, ingress/DNS/TLS) before the secure provisioning work.
 - [Phase 2]: Decide whether SSO/noindex in front of preview URLs is v1.
+- Phase 1 human check pending: real GitHub OAuth App login (see 01-08-SUMMARY)
 
 ## Deferred Items
 
@@ -95,6 +99,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-10-12T06:01:22.506Z
+Last session: 2026-10-12T06:29:20.343Z
 Stopped at: Completed 01-01-PLAN.md
 Resume file: None
