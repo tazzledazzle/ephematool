@@ -1,0 +1,16 @@
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+
+exports_files([
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+])
+
+write_source_files(
+    name = "gen",
+    files = {
+        "src/gen/conventions.gen.ts": "//internal/conventions:_gen/conventions.gen.ts",
+    },
+    suggested_update_target = "//:gen",
+    visibility = ["//:__subpackages__"],
+)

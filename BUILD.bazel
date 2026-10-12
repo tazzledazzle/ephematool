@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
 
 # gazelle:prefix github.com/ephematool/ephematool
 # gazelle:go_naming_convention import
@@ -31,4 +32,24 @@ test_suite(
     tests = [
         "//internal/auth:auth_test",
     ],
+)
+
+# ---------------------------------------------------------------- codegen
+# bazel run //:gen        -- regenerate every committed generated file in place
+# bazel test //:check_gen -- fail if any committed generated file is stale (drift check)
+_GEN_PACKAGES = [
+    "//api",
+    "//internal/conventions",
+    "//internal/store",
+    "//web",
+]
+
+write_source_files(
+    name = "gen",
+    additional_update_targets = ["%s:gen" % p for p in _GEN_PACKAGES],
+)
+
+test_suite(
+    name = "check_gen",
+    tests = ["%s:gen_tests" % p for p in _GEN_PACKAGES],
 )

@@ -1,3 +1,4 @@
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//tools/bzl:go.bzl", "go_test")
 
@@ -16,4 +17,25 @@ go_test(
     srcs = ["conventions_test.go"],
     embed = [":conventions"],
     deps = ["@com_github_stretchr_testify//assert"],
+)
+
+# Codegen (replaces the go:generate directive in generate.go for the Bazel build).
+# Writes the Go constants here and the TS constants consumed by //web:gen.
+genrule(
+    name = "conventions_gen",
+    srcs = ["//conventions:telemetry.json"],
+    outs = [
+        "_gen/conventions.gen.go",
+        "_gen/conventions.gen.ts",
+    ],
+    cmd = "$(execpath //tools/genconventions) -in $(execpath //conventions:telemetry.json) -go-out $(execpath _gen/conventions.gen.go) -ts-out $(execpath _gen/conventions.gen.ts)",
+    tools = ["//tools/genconventions"],
+    visibility = ["//:__subpackages__"],
+)
+
+write_source_files(
+    name = "gen",
+    files = {"conventions.gen.go": "_gen/conventions.gen.go"},
+    suggested_update_target = "//:gen",
+    visibility = ["//:__subpackages__"],
 )

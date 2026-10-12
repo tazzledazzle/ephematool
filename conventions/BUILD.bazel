@@ -1,0 +1,5 @@
+# D-09 conventions source of truth; generated into Go and TS by //tools/genconventions.
+exports_files(
+    ["telemetry.json"],
+    visibility = ["//:__subpackages__"],
+)

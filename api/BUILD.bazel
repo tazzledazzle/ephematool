@@ -1,0 +1,18 @@
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+
+# OpenAPI 3.1 document emitted by the API binary (`api openapi`); replaces the go:generate
+# directive in cmd/api/main.go for the Bazel build.
+genrule(
+    name = "openapi_gen",
+    outs = ["_gen/openapi.json"],
+    cmd = "$(execpath //cmd/api) openapi > $@",
+    tools = ["//cmd/api"],
+    visibility = ["//:__subpackages__"],
+)
+
+write_source_files(
+    name = "gen",
+    files = {"openapi.json": "_gen/openapi.json"},
+    suggested_update_target = "//:gen",
+    visibility = ["//:__subpackages__"],
+)

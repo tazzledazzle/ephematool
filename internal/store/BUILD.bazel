@@ -1,3 +1,4 @@
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
@@ -21,4 +22,42 @@ go_library(
         "@com_github_jackc_pgx_v5//stdlib",
         "@com_github_pressly_goose_v3//:goose",
     ],
+)
+
+# sqlc codegen (replaces the go:generate directive in generate.go for the Bazel build).
+# sqlc comes from the go.mod `tool` directive. The repo-root sqlc.yaml stays the source of
+# truth; only its `out` path is rewritten so sqlc writes to _gen/ instead of the source tree.
+_SQLC_QUERY_OUTS = ["_gen/%s.go" % q.removeprefix("queries/") for q in glob(["queries/*.sql"])]
+
+_SQLC_OUTS = [
+    "_gen/db.go",
+    "_gen/models.go",
+] + _SQLC_QUERY_OUTS
+
+genrule(
+    name = "sqlc_gen",
+    srcs = [
+        "//:sqlc.yaml",
+    ] + glob([
+        "migrations/*.sql",
+        "queries/*.sql",
+    ]),
+    outs = _SQLC_OUTS,
+    cmd = """
+set -euo pipefail
+# sqlc resolves paths relative to the config file, so the rewritten config sits at the
+# execroot (next to the sandboxed inputs) and only `out` is redirected to _gen/.
+cfg="sqlc.$$$$.bazel.yaml"
+sed -e "s#out: .*#out: $(RULEDIR)/_gen#" $(execpath //:sqlc.yaml) > "$$cfg"
+$(execpath @com_github_sqlc_dev_sqlc//cmd/sqlc) generate -f "$$cfg"
+rm -f "$$cfg"
+""",
+    tools = ["@com_github_sqlc_dev_sqlc//cmd/sqlc"],
+)
+
+write_source_files(
+    name = "gen",
+    files = {out.removeprefix("_gen/"): out for out in _SQLC_OUTS},
+    suggested_update_target = "//:gen",
+    visibility = ["//:__subpackages__"],
 )
