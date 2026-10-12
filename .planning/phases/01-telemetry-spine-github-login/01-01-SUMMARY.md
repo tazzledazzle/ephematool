@@ -105,8 +105,8 @@ Observed Prometheus names and labels (Pitfall 7): `http_server_request_duration_
 ## Task Commits
 
 1. **Task 1: Package legitimacy gate** - no commit (resolved by user approval)
-2. **Task 2: Failing smoke harness, stack and configs (RED)** - `7ea8791` (test)
-3. **Task 3: Go API, telemetry, status, spike GREEN** - `7253cb2` (feat)
+2. **Task 2: Failing smoke harness, stack and configs (RED)** - `9b8a263` (test)
+3. **Task 3: Go API, telemetry, status, spike GREEN** - `53268b7` (feat)
 
 ## Deviations from Plan
 
@@ -117,7 +117,7 @@ Observed Prometheus names and labels (Pitfall 7): `http_server_request_duration_
 - **Issue:** The research pin v0.23.0 is not a published version; sdk/log is at v1.47.0 (otlploghttp v0.23.0 does exist).
 - **Fix:** Used `sdk/log@v1.47.0`, same release train as the rest of OTel Go 1.47.0.
 - **Files modified:** go.mod, go.sum
-- **Commit:** 7253cb2
+- **Commit:** 53268b7
 
 **2. [Rule 1 - Spec drift] A4 query returned empty**
 - Covered under Spike Results (FALLBACK-APPLIED); handled by the plan's written fallback.
@@ -148,5 +148,5 @@ None beyond the plan's threat model. Mitigations in place: T-01-01 `attributes/r
 ## Self-Check: PASSED
 
 - Files verified present (compose.yaml, collector.yaml, verify-telemetry.sh, promql.go, middleware.go, openapi.json).
-- Commits `7ea8791` and `7253cb2` exist in git log.
+- Commits `9b8a263` and `53268b7` exist in git log.
 - Acceptance gates: httpapi tests pass, `go vet` clean, trace/metrics/logs verify scripts exit 0, no non-Context slog calls, no redisotel in internal/queue, `make check-gen` clean.
