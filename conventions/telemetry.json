@@ -1,0 +1,12 @@
+{
+  "$comment": "Single source of truth for D-09 prefixes. K8s labels are k8sLabelPrefix + key, except envId whose label suffix is env-id. OTel attributes are otelAttrPrefix + key, except envId whose suffix is id; managed is label-only. Regenerate with: go generate ./internal/conventions/",
+  "k8sLabelPrefix": "ephematool.io/",
+  "otelAttrPrefix": "ephematool.env.",
+  "keys": {
+    "envId": "id",
+    "owner": "owner",
+    "template": "template",
+    "expiresAt": "expires-at",
+    "managed": "managed"
+  }
+}
