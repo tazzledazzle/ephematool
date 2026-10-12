@@ -1,0 +1,59 @@
+# Walking Skeleton — Ephematool
+
+**Phase:** 1
+**Generated:** 2026-10-11
+
+## Capability Proven End-to-End
+
+An SRE runs one command, signs in to the dashboard with GitHub (a fake GitHub in dev/e2e), and the resulting page load is one OpenTelemetry trace spanning `ephematool-dashboard`, `ephematool-api`, and `ephematool-worker`, findable in the local Grafana stack together with a related metric and correlated logs.
+
+The skeleton is complete when plan 01-05 is green. Plans 01-06 to 01-08 add vertical slices on top of it (full status page, auth UX, phase gate) without changing the decisions below.
+
+## Architectural Decisions
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Backend language | Go 1.26, one module `github.com/ephematool/ephematool`, two long-running binaries (`cmd/api`, `cmd/worker`) plus test-only `cmd/fakegithub` | D-05. One module keeps shared packages (`internal/telemetry`, `internal/conventions`, `internal/queue`) importable by both binaries. Rename the module path with `go mod edit -module` if the repo moves. |
+| HTTP framework | Huma v2.39.1 on the stdlib `net/http` ServeMux (`humago` adapter); code-first OpenAPI 3.1 exported by `ephematool-api openapi` into the committed `api/openapi.json` | D-07, D-08. The spec is generated from typed handlers, so it cannot drift. CI runs `make check-gen`. |
+| HTTP middleware order | `http.CrossOriginProtection` -> `otelhttp.NewHandler` -> trace-id header -> scs `LoadAndSave` -> mux; Huma middleware `RouteTagging` sets span name, `http.route`, and the metric labeler from `ctx.Operation().Path` | Pitfall 2 (otelhttp loses `Request.Pattern` behind middleware that copies the request). Bounded `http.route` only (PITFALLS 8). |
+| Data layer | Postgres 18 (system of record) via pgx v5 + otelpgx; goose v3 migrations embedded in `internal/store/migrations` and run on API start (`MIGRATE_ON_START=true`) or `ephematool-api migrate`; sqlc for typed queries | D-06. The first real table is `users` (write: upsert on login; read: `/api/me`). |
+| Queue / scheduling | Redis 8 + asynq v0.26.0. W3C trace context travels in asynq task `Headers`; consumer middleware in `internal/queue` starts a child span. asynq's own Redis connection is never instrumented. | D-06, Pattern 3, Pitfall 4. |
+| Auth | GitHub OAuth App (`read:org`), `golang.org/x/oauth2` with `state` + PKCE S256; org/team allowlist via go-github v92 (fail closed); admins by GitHub login, everyone else viewer; GitHub token discarded after the membership check | D-01, D-02, D-04, D-15. |
+| Sessions | scs/v2 + goredisstore in Redis; cookie `ephematool_session` (HttpOnly, SameSite=Lax, Persist, `Secure` from `COOKIE_SECURE`); `IdleTimeout=168h` sliding through a 5-minute touch, `Lifetime=720h` absolute; `RenewToken` on login | D-03, D-14, Pitfall 1. |
+| Telemetry SDK | OTel Go 1.47.0 (log SDK 0.23.0) bootstrapped once in `internal/telemetry.Setup`; slog default = `slog.NewMultiHandler(JSON stdout, otelslog)`; every log call uses the `*Context` form | OBS-01, Pattern 1. |
+| Telemetry conventions | `conventions/telemetry.json` is the single source for `ephematool.io/*` (K8s labels) and `ephematool.env.*` (OTel attrs); `tools/genconventions` emits `internal/conventions/conventions.gen.go` and `web/src/gen/conventions.gen.ts`; a grep gate forbids hand-written prefixes elsewhere | D-09. |
+| Telemetry pipeline | One OTel Collector contrib 0.162.0 gateway with named `*/platform` pipelines (`memory_limiter` first, `attributes/redact`, `batch` last) -> Tempo 2.10.8, Loki 3.7.8 (`otlphttp` `/otlp`), Prometheus v3.15.0 (OTLP receiver), Grafana 13.2.3 with provisioned trace/log/metric correlation | D-11, D-16. `*/environments` pipelines are reserved for Phase 2. |
+| Dashboard | React 19.3 SPA on Vite 8.3, TanStack Router + Query, Tailwind 4 + shadcn (Radix), typed client from `openapi-typescript` + `openapi-fetch`; served by nginx, which is also the same-origin front door for `/api` and `/otlp` | D-07, UI-SPEC. Same origin means no CORS, the cookie works, and `traceparent` propagates by default. |
+| Browser telemetry | OTel JS web SDK 2.12 / 0.223 (traces, logs, metrics) exporting to `/otlp/v1/*` through nginx (POST-only, 1 MB cap, `limit_req`); initial fetches run inside an explicit `ui.page_load` span context | D-10, Pattern 4, assumption A9. |
+| Deployment target | Docker Compose on the developer machine. `make up` = `docker compose -f deploy/compose.yaml up --build --wait` (real GitHub OAuth from `.env`). `make up-fake` layers `deploy/compose.e2e.yaml` (fake GitHub on 127.0.0.1:9999). All published ports bind to 127.0.0.1. | D-12. No kind cluster in Phase 1. |
+| Directory layout | `cmd/{api,worker,fakegithub}`, `internal/{config,buildinfo,telemetry,httpapi,auth,store,queue,status,conventions,fakegithub}`, `api/openapi.json`, `conventions/`, `tools/genconventions`, `web/` (SPA, `src/features/*`, `src/telemetry`, `src/api`, `e2e/`), `deploy/{compose.yaml,compose.e2e.yaml,otel,tempo,loki,prometheus,grafana,nginx}`, `scripts/verify-telemetry.sh` + `scripts/lib/verify-lib.sh` + `scripts/verify.d/<subcommand>.sh` | Feature folders per capability; each verification subcommand is its own file so later plans add checks without editing shared scripts. |
+| Verification | Go `testing` + testify (unit), build tag `integration` with testcontainers-go (Postgres/Redis), Vitest (SPA unit), Playwright (e2e against `make up-fake`), `scripts/verify-telemetry.sh <subcommand>` (bash + curl + jq against Tempo/Prometheus/Loki/Grafana); `make verify` runs everything | VALIDATION.md. |
+
+## Stack Touched in Phase 1
+
+- [ ] Project scaffold (framework, build, lint, test runner): plans 01-01 (Go module, Dockerfile, Makefile), 01-02 (web/, Vitest, Playwright)
+- [ ] Routing, at least one real route: `GET /api/status` (01-01), `/api/auth/github/login|callback`, `/api/me` (01-04); SPA routes `/login`, `/denied`, `/` (01-05)
+- [ ] Database, one real read and one real write: `users` upsert at login and read by `/api/me` (01-04)
+- [ ] UI, one interactive element wired to the API: "Continue with GitHub" -> OAuth -> shell showing `/api/me`; "Sign out" -> `POST /api/auth/logout` (01-05)
+- [ ] Deployment: `make up` / `make up-fake` runs API, worker, dashboard, Postgres, Redis, Collector, Tempo, Loki, Prometheus, Grafana (01-01, 01-03, 01-05)
+
+## Out of Scope (Deferred to Later Slices)
+
+- Environment creation, templates, GitHub App for Actions dispatch and webhooks, kind cluster (Phase 2)
+- Role enforcement beyond the admin/viewer display split; creator role; audit log (Phase 2, AUTH-02/AUTH-03)
+- Collector `*/environments` pipelines and per-environment attributes on real environments (Phase 2, OBS-03)
+- Per-environment telemetry views (Phase 6)
+- Numeric GitHub ID pinning for admin identity (Phase 2 hardening, Pitfall 10)
+- Tempo 3.x migration
+- Production deployment (TLS, `COOKIE_SECURE=true`, authenticated Grafana)
+
+## Subsequent Slice Plan
+
+Each later phase adds one vertical slice on top of this skeleton without altering its architectural decisions:
+
+- Phase 2: SRE creates a secure preview environment with one click, traced end to end through GitHub Actions
+- Phase 3: Inventory, lifecycle states, debug views, destroy, orphan detection
+- Phase 4: "Live" only when lifecycle, cluster, and probe agree; drift flagged
+- Phase 5: TTL, capped extension, idempotent reaper, PR-close teardown
+- Phase 6: Per-environment telemetry views and provisioning-duration trends
+- Phase 7: Atomic concurrency quotas and scoped secrets by reference

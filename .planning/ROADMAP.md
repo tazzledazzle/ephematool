@@ -29,7 +29,17 @@ Ephematool is built as vertical MVP slices, each leaving an SRE with a new end-t
   1. SRE can sign in with their GitHub account, stay signed in across browser sessions, and sign out from the dashboard
   2. After one dashboard page load and API call, the SRE can find the resulting trace, a related metric, and correlated logs for the API, worker, and dashboard in the local Grafana stack
   3. A fresh checkout starts the whole stack (API, worker, dashboard, collector, backends) with one command and telemetry flows without extra configuration
-**Plans**: TBD
+**Plans:** 8 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0 backend telemetry spike: Compose + Collector + LGTM, Go API with one correlated trace/metric/log
+- [ ] 01-02-PLAN.md — SPA scaffold (UI-SPEC design system) + browser OTel; proves A9 page-load parenting
+- [ ] 01-03-PLAN.md — Worker joins the trace via asynq headers; D-09 conventions generator
+- [ ] 01-04-PLAN.md — GitHub OAuth login backend: PKCE, org allowlist, roles, users table, sessions, fake GitHub
+- [ ] 01-05-PLAN.md — Walking skeleton: sign in through the dashboard; one trace across dashboard, API, worker
+- [ ] 01-06-PLAN.md — Telemetry status page: 10-service prober, grouped table, trace-aware error states
+- [ ] 01-07-PLAN.md — Auth UX: sliding 7-day/30-day sessions, denied page, user menu with theme, expiry
+- [ ] 01-08-PLAN.md — Phase gate: Grafana dashboard + correlation, redaction, fresh-checkout, make verify, real login check
 **UI hint**: yes
 
 ### Phase 2: Create a Secure Preview Environment
@@ -118,7 +128,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Telemetry Spine & GitHub Login | 0/TBD | Not started | - |
+| 1. Telemetry Spine & GitHub Login | 0/8 | Not started | - |
 | 2. Create a Secure Preview Environment | 0/TBD | Not started | - |
 | 3. Inventory, Lifecycle & Destroy | 0/TBD | Not started | - |
 | 4. Live Health & Drift Detection | 0/TBD | Not started | - |
