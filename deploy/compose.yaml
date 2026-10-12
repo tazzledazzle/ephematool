@@ -1,0 +1,142 @@
+name: ephematool
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel/collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      # health_check extension only; OTLP ports are not published (T-01-03)
+      - "127.0.0.1:13133:13133"
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+
+  tempo:
+    image: grafana/tempo:2.10.8
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "127.0.0.1:3200:3200"
+
+  loki:
+    image: grafana/loki:3.7.8
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-otlp-receiver
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    environment:
+      # DEV-ONLY: anonymous Admin access. Never ship this outside the local stack (A10, T-01-02).
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      # DEV-ONLY credentials; the port is not published (T-01-07)
+      POSTGRES_USER: ephematool
+      POSTGRES_PASSWORD: ephematool
+      POSTGRES_DB: ephematool
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ephematool"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8.8-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: go-runtime
+      args:
+        CMD: api
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILT_AT: ${BUILT_AT:-unknown}
+    environment:
+      OTEL_SERVICE_NAME: ephematool-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+      APP_ENV: ${APP_ENV:-local}
+      HTTP_ADDR: ${HTTP_ADDR:-:8081}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-http://localhost:3000}
+      DATABASE_URL: ${DATABASE_URL:-postgres://ephematool:ephematool@postgres:5432/ephematool?sslmode=disable}
+      MIGRATE_ON_START: ${MIGRATE_ON_START:-true}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_AUTHORIZE_URL: ${GITHUB_AUTHORIZE_URL:-https://github.com/login/oauth/authorize}
+      GITHUB_TOKEN_URL: ${GITHUB_TOKEN_URL:-https://github.com/login/oauth/access_token}
+      GITHUB_API_URL: ${GITHUB_API_URL:-https://api.github.com/}
+      ALLOWED_ORGS: ${ALLOWED_ORGS:-}
+      ALLOWED_TEAMS: ${ALLOWED_TEAMS:-}
+      ADMIN_LOGINS: ${ADMIN_LOGINS:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_IDLE_TIMEOUT: ${SESSION_IDLE_TIMEOUT:-168h}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-720h}
+      SESSION_TOUCH_INTERVAL: ${SESSION_TOUCH_INTERVAL:-5m}
+      PING_THROTTLE: ${PING_THROTTLE:-10s}
+      HEARTBEAT_INTERVAL: ${HEARTBEAT_INTERVAL:-15s}
+      PROBE_INTERVAL: ${PROBE_INTERVAL:-10s}
+      PROBE_TIMEOUT: ${PROBE_TIMEOUT:-2s}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://prometheus:9090}
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+volumes:
+  tempo-data:
+  loki-data:
+  prometheus-data:
+  grafana-data:
+  postgres-data:
