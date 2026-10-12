@@ -1,8 +1,8 @@
 ---
 phase: 1
 slug: telemetry-spine-github-login
-status: draft
-nyquist_compliant: false
+status: planned
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-10-11
 ---
@@ -36,7 +36,9 @@ created: 2026-10-11
 
 ## Per-Task Verification Map
 
-Task IDs are assigned by the planner; rows below are keyed by requirement and success criterion and are refined per task after planning.
+Rows are keyed by requirement and success criterion. Plan mapping: 01-01 (stack spike, status/route-tagging scaffolding), 01-02 (SPA, browser telemetry, Vitest/Playwright configs), 01-03 (worker trace link, conventions generator, `check-gen`), 01-04 (OAuth, allowlist, sessions, fakegithub), 01-05 (end-to-end skeleton trace), 01-06 (status endpoint), 01-07 (session touch, denied page), 01-08 (phase gate). Every task carries its own `<automated>` verify in its PLAN.md.
+
+**Gating note:** the fast Go and Vitest commands run first in each task's verify. Commands that bring up the full stack (`make up`, Playwright, `scripts/verify-telemetry.sh`) are wave-level gates, not per-commit checks, and are not held to the 30-second quick-run target.
 
 | Behavior | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |----------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
@@ -79,11 +81,11 @@ Task IDs are assigned by the planner; rows below are keyed by requirement and su
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify
 - [ ] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 30s for the quick run
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** plan-checked 2026-10-11; Wave 0 and remaining sign-offs complete during execution

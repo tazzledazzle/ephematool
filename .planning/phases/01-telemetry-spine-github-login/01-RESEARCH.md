@@ -585,15 +585,15 @@ Not applicable: greenfield phase (no rename/refactor/migration). Omitted by desi
 | A12 | Browser logs/metrics are limited to a small set (page_load, API error log lines; page_views counter and a vitals histogram) | Standard Stack | OBS-01 interpretation of "dashboard emits logs/metrics" could demand more |
 | A13 | Collector self-metrics syntax under `service.telemetry.metrics.readers` is valid for 0.162 | Code Examples | Config fails to start; check Collector docs in Wave 0 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Tempo 2.10.8 or 3.1.0?**
+1. **Tempo 2.10.8 or 3.1.0?** RESOLVED: Tempo 2.10.8, locked by CONTEXT D-16.
    - Known: 3.1.0 released 2026-09-29; monolithic `-target=all` runs without Kafka (docs conflict slightly with the quick-start page); config differs from 2.x (`live_store`, no `ingester`).
    - Unclear: whether a 3.x single-binary Compose is stable enough for a local dev stack.
    - Recommendation: start on 2.10.8 for the Wave 0 spike; adopt 3.1.0 only if the spike can run it with a config produced by `tempo-cli migrate config --mode=monolithic`.
-2. **Absolute session cap and revalidation of org membership** (A1/A3): Should a session older than N days force a fresh GitHub login so org removal takes effect? Recommendation: 30-day absolute cap, confirm with user.
-3. **Dashboard liveness definition**: nginx `/healthz` plus browser-metric recency. If nobody has the page open, the dashboard has no recent signal, but the viewer of the status page is by definition the one providing it. Acceptable; revisit if a headless uptime check is wanted.
-4. **Public hostname for Grafana deep link** is `GRAFANA_PUBLIC_URL` (default `http://localhost:3000`); document for non-local use.
+2. **Absolute session cap and revalidation of org membership** (A1/A3) RESOLVED: 30-day absolute cap, 7-day sliding idle, locked by CONTEXT D-14. Should a session older than N days force a fresh GitHub login so org removal takes effect? Recommendation: 30-day absolute cap, confirm with user.
+3. **Dashboard liveness definition** RESOLVED: recommendation accepted (plan 01-06 implements it): nginx `/healthz` plus browser-metric recency. If nobody has the page open, the dashboard has no recent signal, but the viewer of the status page is by definition the one providing it. Acceptable; revisit if a headless uptime check is wanted.
+4. **Public hostname for Grafana deep link** RESOLVED: handled via config as `GRAFANA_PUBLIC_URL` (default `http://localhost:3000`); document for non-local use.
 
 ## Environment Availability
 
