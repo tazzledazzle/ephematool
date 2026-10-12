@@ -134,6 +134,32 @@ services:
       otel-collector:
         condition: service_started
 
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: go-runtime
+      args:
+        CMD: worker
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILT_AT: ${BUILT_AT:-unknown}
+    # The worker binary has no subcommands; ignore the image default CMD.
+    command: []
+    environment:
+      OTEL_SERVICE_NAME: ephematool-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+      APP_ENV: ${APP_ENV:-local}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      HEARTBEAT_INTERVAL: ${HEARTBEAT_INTERVAL:-15s}
+    depends_on:
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
 volumes:
   tempo-data:
   loki-data:
