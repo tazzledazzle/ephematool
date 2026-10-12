@@ -172,3 +172,81 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 5. TTL, Extension & Auto-Teardown | 0/TBD | Not started | - |
 | 6. Per-Environment Telemetry Views | 0/TBD | Not started | - |
 | 7. Quota & Secrets Guardrails | 0/TBD | Not started | - |
+
+## Backlog
+
+Pending and unfinished work backfilled on 2026-10-12. Each item below is also a GitHub issue; existing phase sections above are unchanged. Issues carry a `<!-- backlog-id -->` marker so the backfill can be re-run safely.
+
+**Suggested phase (suggestion only, no phase created):** a "Phase 1 hardening pass" between Phase 2 and Phase 3 could take the Phase 1 follow-ups plus the hardening list below. The migration lock and server timeouts are best done before Phase 2 rolling deploys.
+
+### Hardening (tracked here, not as public issues)
+
+Findings from `.planning/phases/01-telemetry-spine-github-login/01-REVIEW.md` and `01-REVIEW-WEB.md` and from `02-CONTEXT.md` that are deliberately not filed as public issues. Details stay in the review files.
+
+- `01-REVIEW.md` WR-01 (`internal/auth/handlers.go`, `internal/auth/session.go`): re-validate org, team and admin role after login instead of trusting the session copy.
+- `01-REVIEW.md` WR-02 (`internal/auth/middleware.go`, `internal/httpapi/status.go`): make session requirement the default for API operations, with explicit public markers, and add a role gate helper before Phase 2 mutations.
+- `01-REVIEW.md` WR-03 (`internal/config/config.go`, `deploy/compose.yaml`): align cookie security settings with the configured public URL scheme.
+- `01-REVIEW.md` WR-04 (`deploy/nginx/default.conf`, `deploy/otel/collector.yaml`, `internal/status/prober.go`): separate trust levels for browser telemetry ingest and platform telemetry pipelines.
+- `01-REVIEW.md` WR-05 (`deploy/compose.yaml`): reduce the Grafana anonymous access role.
+- `01-REVIEW.md` WR-10 (`internal/auth/handlers.go`): reset pre-existing session data during login.
+- `01-REVIEW.md` IN-01 (`internal/auth/handlers.go`): bound and normalize provider error and `next` values that are logged or stored in cookies.
+- `01-REVIEW.md` IN-02 (`internal/auth/handlers.go`, `internal/httpapi/api.go`): review what the public auth config and API docs routes disclose.
+- `01-REVIEW.md` IN-04 (`deploy/nginx/default.conf`) and `01-REVIEW-WEB.md` IN-01 (`web/index.html`): add HTTP security headers and a content security policy.
+- `01-REVIEW.md` IN-06 (`deploy/compose.yaml`): add authentication to Redis (persistence is tracked in a public issue).
+- `01-REVIEW-WEB.md` WR-06 (`web/src/features/auth/DeniedPage.tsx`): validate the login value shown on the denied page.
+- `01-REVIEW-WEB.md` WR-07 (`web/src/features/auth/LoginPage.tsx`, `web/src/router.tsx`): validate `next` on the client as defense in depth.
+- `01-REVIEW-WEB.md` WR-08 (`web/src/features/status/StatusPage.tsx`): check the URL scheme of the Grafana link before rendering it.
+- `02-CONTEXT.md` Deferred Ideas: pin admins by numeric GitHub id instead of login.
+
+### Backlog issues
+
+| # | Title | Labels | Milestone |
+|---|-------|--------|-----------|
+| [#1](https://github.com/tazzledazzle/ephematool/issues/1) | Verify sign-in with a real GitHub OAuth App and org | `phase-1`, `type:uat`, `area:auth`, `source:uat` | Phase 1 follow-ups |
+| [#2](https://github.com/tazzledazzle/ephematool/issues/2) | Verify Open in Grafana and trace-to-logs correlation after a real login | `phase-1`, `type:uat`, `area:telemetry`, `source:uat` | Phase 1 follow-ups |
+| [#3](https://github.com/tazzledazzle/ephematool/issues/3) | Validate duration and interval config values at startup | `phase-1`, `type:hardening`, `area:ops`, `source:code-review` | Phase 1 follow-ups |
+| [#4](https://github.com/tazzledazzle/ephematool/issues/4) | Serialize migrate-on-start across concurrent API replicas | `phase-1`, `type:hardening`, `area:deploy`, `source:code-review` | Phase 1 follow-ups |
+| [#5](https://github.com/tazzledazzle/ephematool/issues/5) | Forward the Host header with its port in the nginx proxy | `phase-1`, `type:tech-debt`, `area:deploy`, `source:code-review` | Phase 1 follow-ups |
+| [#6](https://github.com/tazzledazzle/ephematool/issues/6) | Enable Loki compactor retention so retention_period takes effect | `phase-1`, `type:tech-debt`, `area:telemetry`, `source:code-review` | Phase 1 follow-ups |
+| [#7](https://github.com/tazzledazzle/ephematool/issues/7) | Make the fresh-checkout verification use isolated compose volumes | `phase-1`, `type:test-gap`, `area:build`, `source:code-review` | Phase 1 follow-ups |
+| [#8](https://github.com/tazzledazzle/ephematool/issues/8) | Log allowlist lookup failures and validate ALLOWED_TEAMS entries | `phase-1`, `type:tech-debt`, `area:auth`, `source:code-review` | Phase 1 follow-ups |
+| [#9](https://github.com/tazzledazzle/ephematool/issues/9) | Set HTTP server read, write and idle timeouts | `phase-1`, `type:hardening`, `area:ops`, `source:code-review` | Phase 1 follow-ups |
+| [#10](https://github.com/tazzledazzle/ephematool/issues/10) | Re-resolve nginx upstreams when containers are recreated | `phase-1`, `type:tech-debt`, `area:deploy`, `source:code-review` | Phase 1 follow-ups |
+| [#11](https://github.com/tazzledazzle/ephematool/issues/11) | Tidy collector config: deprecated exporter aliases and environment label override | `phase-1`, `type:tech-debt`, `area:telemetry`, `source:code-review` | Phase 1 follow-ups |
+| [#12](https://github.com/tazzledazzle/ephematool/issues/12) | Persist Redis data so sessions and queued tasks survive container recreation | `phase-1`, `type:tech-debt`, `area:deploy`, `source:code-review` | Phase 1 follow-ups |
+| [#13](https://github.com/tazzledazzle/ephematool/issues/13) | Fail integration tests instead of skipping when Docker is unavailable | `phase-1`, `type:test-gap`, `area:build`, `source:code-review` | Phase 1 follow-ups |
+| [#14](https://github.com/tazzledazzle/ephematool/issues/14) | Set explicit bucket boundaries for the page-load duration histogram | `phase-1`, `type:tech-debt`, `area:web`, `area:telemetry`, `source:code-review` | Phase 1 follow-ups |
+| [#15](https://github.com/tazzledazzle/ephematool/issues/15) | End the page-load span when /api/me fails with a non-401 error | `phase-1`, `type:tech-debt`, `area:web`, `area:telemetry`, `source:code-review` | Phase 1 follow-ups |
+| [#16](https://github.com/tazzledazzle/ephematool/issues/16) | Stop the stale-data counter from spamming screen readers | `phase-1`, `type:tech-debt`, `area:web`, `accessibility`, `source:code-review` | Phase 1 follow-ups |
+| [#17](https://github.com/tazzledazzle/ephematool/issues/17) | Handle unknown service statuses and groups, and add a router error boundary | `phase-1`, `type:tech-debt`, `area:web`, `source:code-review` | Phase 1 follow-ups |
+| [#18](https://github.com/tazzledazzle/ephematool/issues/18) | Guard against a full-page redirect loop on repeated 401 responses | `phase-1`, `type:tech-debt`, `area:web`, `area:auth`, `source:code-review` | Phase 1 follow-ups |
+| [#19](https://github.com/tazzledazzle/ephematool/issues/19) | Fix web tests that cannot fail or leak state | `phase-1`, `type:test-gap`, `area:web`, `source:code-review` | Phase 1 follow-ups |
+| [#20](https://github.com/tazzledazzle/ephematool/issues/20) | Add unit tests for AppShell, StatusPage and page-load span behaviour | `phase-1`, `type:test-gap`, `area:web`, `source:code-review` | Phase 1 follow-ups |
+| [#21](https://github.com/tazzledazzle/ephematool/issues/21) | Fix transition-suppression style leaking in hidden tabs | `phase-1`, `type:tech-debt`, `area:web`, `source:code-review` | Phase 1 follow-ups |
+| [#22](https://github.com/tazzledazzle/ephematool/issues/22) | Keep a single web lockfile and treat BUILT_AT=unknown as unset | `phase-1`, `type:tech-debt`, `area:build`, `area:web`, `source:code-review` | Phase 1 follow-ups |
+| [#23](https://github.com/tazzledazzle/ephematool/issues/23) | Run the web container as a non-root user | `phase-1`, `type:hardening`, `area:deploy`, `source:code-review` | Phase 1 follow-ups |
+| [#24](https://github.com/tazzledazzle/ephematool/issues/24) | Run real Radix tooltip and dropdown components in Bazel Vitest | `phase-1`, `type:test-gap`, `area:build`, `area:web`, `source:code-review` | Phase 1 follow-ups |
+| [#25](https://github.com/tazzledazzle/ephematool/issues/25) | Build compose images with rules_oci for hermetic, cached images | `phase-1`, `type:tech-debt`, `area:build`, `source:deferred` | Phase 1 follow-ups |
+| [#26](https://github.com/tazzledazzle/ephematool/issues/26) | Stamp Bazel-built Go binaries with commit and build time | `phase-1`, `type:tech-debt`, `area:build`, `source:deferred` | Phase 1 follow-ups |
+| [#27](https://github.com/tazzledazzle/ephematool/issues/27) | Audit the go-querystring transitive dependency | `phase-1`, `type:tech-debt`, `area:build`, `source:research` | Phase 1 follow-ups |
+| [#28](https://github.com/tazzledazzle/ephematool/issues/28) | Make the worker ping throttle deterministic instead of a global Redis throttle | `phase-1`, `type:tech-debt`, `area:ops`, `source:code-review` | Phase 1 follow-ups |
+| [#29](https://github.com/tazzledazzle/ephematool/issues/29) | Update the stale technology stack block in CLAUDE.md | `phase-1`, `type:docs`, `source:code-review` | Phase 1 follow-ups |
+| [#30](https://github.com/tazzledazzle/ephematool/issues/30) | Add a GitHub webhook receiver with signature verification and delivery dedupe | `backlog`, `type:feature`, `area:ops`, `source:deferred` | Backlog |
+| [#31](https://github.com/tazzledazzle/ephematool/issues/31) | Support GitHub OIDC to a remote cluster and a hosted-runner path | `backlog`, `type:feature`, `area:deploy`, `source:deferred` | Backlog |
+| [#32](https://github.com/tazzledazzle/ephematool/issues/32) | Support private container images when validating environment image tags | `backlog`, `type:feature`, `area:deploy`, `source:deferred` | Backlog |
+| [#33](https://github.com/tazzledazzle/ephematool/issues/33) | Add team or repo ownership attributes to environments | `phase-7`, `type:feature`, `area:ops`, `source:deferred` | Phase 7: Quota & Secrets Guardrails |
+| [#34](https://github.com/tazzledazzle/ephematool/issues/34) | Verify environment creation with a real GitHub App, environments repo and self-hosted runner | `phase-2`, `type:uat`, `area:deploy`, `source:research` | Phase 2: Create a Secure Preview Environment |
+| [#35](https://github.com/tazzledazzle/ephematool/issues/35) | Verify preview URL access in Safari, Firefox and Linux Docker | `phase-2`, `type:test-gap`, `area:deploy`, `source:research` | Phase 2: Create a Secure Preview Environment |
+| [#36](https://github.com/tazzledazzle/ephematool/issues/36) | COST-01: Show estimated cost per environment | `backlog`, `type:feature`, `source:deferred` | Backlog |
+| [#37](https://github.com/tazzledazzle/ephematool/issues/37) | NOTF-01: Send Slack notifications for expiry and failures | `backlog`, `type:feature`, `source:deferred` | Backlog |
+| [#38](https://github.com/tazzledazzle/ephematool/issues/38) | OBS-06: Rich per-environment dashboards with SLO-style health scoring | `backlog`, `type:feature`, `area:telemetry`, `source:deferred` | Backlog |
+| [#39](https://github.com/tazzledazzle/ephematool/issues/39) | POL-01: Enforce guardrails with admission controller policy | `backlog`, `type:feature`, `area:deploy`, `source:deferred` | Backlog |
+| [#40](https://github.com/tazzledazzle/ephematool/issues/40) | PLAT-01: Drive the platform from a CLI | `backlog`, `type:feature`, `source:deferred` | Backlog |
+| [#41](https://github.com/tazzledazzle/ephematool/issues/41) | PLAT-02: Target multiple clusters | `backlog`, `type:feature`, `area:deploy`, `source:deferred` | Backlog |
+| [#42](https://github.com/tazzledazzle/ephematool/issues/42) | PLAT-03: Backstage plugin or GitOps (Argo CD) provisioning backend | `backlog`, `type:feature`, `area:deploy`, `source:deferred` | Backlog |
+| [#43](https://github.com/tazzledazzle/ephematool/issues/43) | Epic: Phase 2 - Create a Secure Preview Environment | `epic`, `phase-2` | Phase 2: Create a Secure Preview Environment |
+| [#44](https://github.com/tazzledazzle/ephematool/issues/44) | Epic: Phase 3 - Inventory, Lifecycle & Destroy | `epic`, `phase-3` | Phase 3: Inventory, Lifecycle & Destroy |
+| [#45](https://github.com/tazzledazzle/ephematool/issues/45) | Epic: Phase 4 - Live Health & Drift Detection | `epic`, `phase-4` | Phase 4: Live Health & Drift Detection |
+| [#46](https://github.com/tazzledazzle/ephematool/issues/46) | Epic: Phase 5 - TTL, Extension & Auto-Teardown | `epic`, `phase-5` | Phase 5: TTL, Extension & Auto-Teardown |
+| [#47](https://github.com/tazzledazzle/ephematool/issues/47) | Epic: Phase 6 - Per-Environment Telemetry Views | `epic`, `phase-6` | Phase 6: Per-Environment Telemetry Views |
+| [#48](https://github.com/tazzledazzle/ephematool/issues/48) | Epic: Phase 7 - Quota & Secrets Guardrails | `epic`, `phase-7` | Phase 7: Quota & Secrets Guardrails |
