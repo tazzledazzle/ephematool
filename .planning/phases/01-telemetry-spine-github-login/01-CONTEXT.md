@@ -36,6 +36,11 @@ Requirements: OBS-01, AUTH-01. Creating environments, roles beyond a minimal adm
 - **D-12:** One command runs everything with **Docker Compose**: API, worker, SPA, Postgres, Redis, OTel Collector, and the LGTM backends. A kind cluster is not part of Phase 1 and joins in Phase 2 when provisioning needs one.
 - **D-13:** After login the dashboard shows a **telemetry status page**: the signed-in user, build info, per-service telemetry health, and a Grafana deep link. This gives the empty shell a purpose and proves the spine works.
 
+### Confirmed after research (2026-10-11)
+- **D-14:** Sessions slide on a 7-day idle timeout with an explicit **30-day absolute lifetime**. The session library defaults to 24h absolute, so this must be set explicitly.
+- **D-15:** Phase 1 login uses a **GitHub OAuth App** with `read:org`. Phase 2 adds a separate GitHub App for Actions dispatch and webhooks; consolidating the two is a later decision.
+- **D-16:** The local stack pins **Tempo 2.10.8** (single-binary config). Tempo 3.x is not used in Phase 1.
+
 ### Claude's Discretion
 - Go HTTP framework, project layout, Postgres migration tool, OpenAPI generation approach, and Redis queue library, to be chosen during research and planning (see D-08).
 - Exact Collector pipeline layout, subject to a separate pipeline for the tool's own telemetry per the research pitfalls.
