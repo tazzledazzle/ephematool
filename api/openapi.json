@@ -404,6 +404,11 @@
             "description": "Error"
           }
         },
+        "security": [
+          {
+            "session": []
+          }
+        ],
         "summary": "Telemetry status snapshot"
       }
     }

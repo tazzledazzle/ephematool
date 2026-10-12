@@ -54,6 +54,8 @@ func registerStatus(api huma.API, deps Deps) {
 	}, func(o *huma.Operation) {
 		o.OperationID = "get-status"
 		o.Summary = "Telemetry status snapshot"
+		// RequireSession answers 401 without a signed-in user (T-01-28).
+		o.Security = []map[string][]string{{"session": {}}}
 	})
 }
 
