@@ -18,9 +18,9 @@ created: 2026-10-11
 | Property | Value |
 |----------|-------|
 | **Framework** | Go `testing` + testify (integration via testcontainers-go, build tag `integration`, miniredis for fast unit tests); Vitest (SPA unit); Playwright (e2e); bash + curl + jq (stack e2e) |
-| **Config file** | none yet — Wave 0 creates `vitest.config.ts`, `playwright.config.ts`, `Makefile` targets |
+| **Config file** | none yet — Wave 0 creates `vitest.config.ts`, `playwright.config.ts`, build targets (originally a Makefile; now Bazel: MODULE.bazel, BUILD.bazel, `tools/verify.sh`) |
 | **Quick run command** | `go test ./... -short && npm --prefix web test -- --run` |
-| **Full suite command** | `make verify` (integration tests + SPA unit tests + `docker compose up --build --wait` + `scripts/verify-telemetry.sh` + Playwright) |
+| **Full suite command** | `./tools/verify.sh` (integration tests + SPA unit tests + `docker compose up --build --wait` + `scripts/verify-telemetry.sh` + Playwright) |
 | **Estimated runtime** | quick ~30 seconds; full several minutes |
 
 ---
@@ -29,7 +29,7 @@ created: 2026-10-11
 
 - **After every task commit:** Run `go test ./... -short && npm --prefix web test -- --run`
 - **After every plan wave:** Run `go test -tags integration ./...` and `scripts/verify-telemetry.sh` against a running stack
-- **Before `/gsd-verify-work`:** `make verify` must be green, plus a human check of a real GitHub login
+- **Before `/gsd-verify-work`:** `./tools/verify.sh` must be green, plus a human check of a real GitHub login
 - **Max feedback latency:** 30 seconds for the quick run
 
 ---
@@ -38,7 +38,7 @@ created: 2026-10-11
 
 Rows are keyed by requirement and success criterion. Plan mapping: 01-01 (stack spike, status/route-tagging scaffolding), 01-02 (SPA, browser telemetry, Vitest/Playwright configs), 01-03 (worker trace link, conventions generator, `check-gen`), 01-04 (OAuth, allowlist, sessions, fakegithub), 01-05 (end-to-end skeleton trace), 01-06 (status endpoint), 01-07 (session touch, denied page), 01-08 (phase gate). Every task carries its own `<automated>` verify in its PLAN.md.
 
-**Gating note:** the fast Go and Vitest commands run first in each task's verify. Commands that bring up the full stack (`make up`, Playwright, `scripts/verify-telemetry.sh`) are wave-level gates, not per-commit checks, and are not held to the 30-second quick-run target.
+**Gating note:** the fast Go and Vitest commands run first in each task's verify. Commands that bring up the full stack (`bazel run //:up`, Playwright, `scripts/verify-telemetry.sh`) are wave-level gates, not per-commit checks, and are not held to the 30-second quick-run target.
 
 | Behavior | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |----------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
@@ -53,7 +53,7 @@ Rows are keyed by requirement and success criterion. Plan mapping: 01-01 (stack 
 | `http.route` is the route template, not the raw path | OBS-01 | Cardinality blowup | Bounded labels | Go unit | `go test ./internal/httpapi/... -run TestRouteTagging` | ❌ W0 | ⬜ pending |
 | Cookie and Authorization never reach Tempo | OBS-01 | Secret leakage into telemetry | Collector redaction | Stack e2e | `scripts/verify-telemetry.sh redaction` | ❌ W0 | ⬜ pending |
 | `/api/status` returns exactly 10 services in fixed groups; stopping Loki flips it to `down` within 2 probe cycles | OBS-01 (D-13) | Info disclosure | Requires a session | Stack e2e + Go unit | `scripts/verify-telemetry.sh status`; `go test ./internal/status/...` | ❌ W0 | ⬜ pending |
-| Generated constants and OpenAPI spec are in sync with their sources | OBS-01 (D-07, D-09) | — | — | Generated-file check | `make check-gen` | ❌ W0 | ⬜ pending |
+| Generated constants and OpenAPI spec are in sync with their sources | OBS-01 (D-07, D-09) | — | — | Generated-file check | `bazel test //:check_gen` | ❌ W0 | ⬜ pending |
 | Fresh checkout starts the whole stack with one command; all 10 services healthy within 120s | OBS-01 (SC3) | — | — | Stack e2e | `scripts/verify-telemetry.sh up` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
@@ -66,7 +66,7 @@ Rows are keyed by requirement and success criterion. Plan mapping: 01-01 (stack 
 - [ ] `scripts/verify-telemetry.sh` skeleton with `up`, `trace`, `metrics`, `logs` subcommands
 - [ ] `cmd/fakegithub` and `deploy/compose.e2e.yaml` (a fresh checkout has no OAuth App credentials)
 - [ ] Go test scaffolding (`internal/auth` fake GitHub helper, miniredis fixtures), `vitest.config.ts`, `playwright.config.ts`
-- [ ] `tools/genconventions` and `Makefile` targets (`up`, `gen`, `check-gen`, `test`, `verify`)
+- [ ] `tools/genconventions` and build targets for up, gen, check-gen, test, verify (originally Makefile targets; now `bazel run //:up`, `bazel run //:gen`, `bazel test //:check_gen`, `bazel test //...`, `./tools/verify.sh`)
 - [ ] Framework installs per RESEARCH.md Installation section
 
 ---
