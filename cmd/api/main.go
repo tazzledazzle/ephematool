@@ -110,7 +110,9 @@ func serve() error {
 	}()
 
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
-	if err := redisotel.InstrumentTracing(rdb); err != nil {
+	// Do not record Redis command text: scs session keys embed the session token
+	// and the SET value is the serialized session, so db.statement would leak both.
+	if err := redisotel.InstrumentTracing(rdb, redisotel.WithDBStatement(false)); err != nil {
 		return err
 	}
 	if err := redisotel.InstrumentMetrics(rdb); err != nil {

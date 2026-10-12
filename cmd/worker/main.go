@@ -50,7 +50,8 @@ func run() error {
 	}()
 
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
-	if err := redisotel.InstrumentTracing(rdb); err != nil {
+	// Same rule as the API: never record Redis command text in spans.
+	if err := redisotel.InstrumentTracing(rdb, redisotel.WithDBStatement(false)); err != nil {
 		return err
 	}
 	if err := redisotel.InstrumentMetrics(rdb); err != nil {
