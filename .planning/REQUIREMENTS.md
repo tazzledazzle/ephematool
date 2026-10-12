@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Observability
 
-- [ ] **OBS-01**: The platform emits OpenTelemetry traces, metrics, and logs for its own API, worker, and dashboard from first run
+- [x] **OBS-01**: The platform emits OpenTelemetry traces, metrics, and logs for its own API, worker, and dashboard from first run
 - [ ] **OBS-02**: An SRE can follow one trace from a dashboard "Create" click through the GitHub Actions run to the environment's first healthy probe
 - [ ] **OBS-03**: Every environment ships OTel telemetry from creation, tagged with environment id, owner, and template attributes
 - [ ] **OBS-04**: An SRE can view a per-environment health and telemetry panel (error rate, latency, recent traces) with a deep link into Grafana
@@ -92,7 +92,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | AUTH-01 | Phase 1 | Pending |
-| OBS-01 | Phase 1 | Pending |
+| OBS-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 2 | Pending |
 | AUTH-03 | Phase 2 | Pending |
 | ENV-01 | Phase 2 | Pending |
