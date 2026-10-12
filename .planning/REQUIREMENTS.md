@@ -42,7 +42,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **GRD-03**: When a request is rejected, the dashboard explains why, including remaining quota and TTL countdown
 - [ ] **GRD-04**: Every environment namespace gets a default-deny NetworkPolicy baseline
 - [ ] **GRD-05**: Environments reference scoped external secrets by name; secret values are never displayed, and production data is never used
-- [ ] **AUTH-01**: An SRE can log in with GitHub
+- [x] **AUTH-01**: An SRE can log in with GitHub
 - [ ] **AUTH-02**: Actions are gated by role (viewer, creator, admin)
 - [ ] **AUTH-03**: Every create, extend, and destroy action is recorded in an append-only audit log showing who did it and when
 
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
 | OBS-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 2 | Pending |
 | AUTH-03 | Phase 2 | Pending |
