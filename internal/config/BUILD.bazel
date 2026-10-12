@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
 
 go_library(
     name = "config",
@@ -6,4 +7,10 @@ go_library(
     importpath = "github.com/ephematool/ephematool/internal/config",
     visibility = ["//:__subpackages__"],
     deps = ["@com_github_caarlos0_env_v11//:env"],
+)
+
+go_test(
+    name = "config_test",
+    srcs = ["config_test.go"],
+    embed = [":config"],
 )
