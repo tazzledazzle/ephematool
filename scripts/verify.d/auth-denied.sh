@@ -26,7 +26,7 @@ esac
 
 i=0
 while [ "$i" -lt 30 ]; do
-  n="$(loki_count '{service_name="ephematool-api"} |= "auth.denied" |= "octo-outsider"' 300 || echo 0)"
+  n="$(loki_count '{service_name="ephematool-api"} |= "auth.denied" | login="octo-outsider"' 300 || echo 0)"
   if [ -n "$n" ] && [ "$n" -ge 1 ] 2>/dev/null; then
     pass "loki returned $n auth.denied line(s) for octo-outsider"
     exit 0
