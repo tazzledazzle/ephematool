@@ -91,12 +91,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmapper) | | |
+| AUTH-01 | Phase 1 | Pending |
+| OBS-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 2 | Pending |
+| ENV-01 | Phase 2 | Pending |
+| ENV-02 | Phase 2 | Pending |
+| GRD-01 | Phase 2 | Pending |
+| GRD-04 | Phase 2 | Pending |
+| OBS-02 | Phase 2 | Pending |
+| OBS-03 | Phase 2 | Pending |
+| ENV-03 | Phase 3 | Pending |
+| STAT-01 | Phase 3 | Pending |
+| STAT-02 | Phase 3 | Pending |
+| STAT-05 | Phase 3 | Pending |
+| STAT-06 | Phase 3 | Pending |
+| STAT-03 | Phase 4 | Pending |
+| STAT-04 | Phase 4 | Pending |
+| ENV-04 | Phase 5 | Pending |
+| ENV-05 | Phase 5 | Pending |
+| ENV-06 | Phase 5 | Pending |
+| ENV-07 | Phase 5 | Pending |
+| ENV-08 | Phase 5 | Pending |
+| OBS-04 | Phase 6 | Pending |
+| OBS-05 | Phase 6 | Pending |
+| GRD-02 | Phase 7 | Pending |
+| GRD-03 | Phase 7 | Pending |
+| GRD-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- v1 requirements: 27 total
+- Mapped to phases: 27
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-11*
