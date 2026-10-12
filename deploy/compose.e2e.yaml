@@ -25,7 +25,9 @@ services:
       - ALLOWED_ORGS=ephematool-e2e
       - ALLOWED_TEAMS=partner-org/sre
       - ADMIN_LOGINS=Octo-Admin
-      - PING_THROTTLE=1s
+      # The ping throttle is global, so parallel specs would steal each other's window and a page
+      # load would get no worker span. Disabled for e2e only (the default stays 10s).
+      - PING_THROTTLE=0
     depends_on:
       fakegithub:
         condition: service_started
