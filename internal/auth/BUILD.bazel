@@ -36,10 +36,15 @@ go_test(
         "allowlist_test.go",
         "next_test.go",
         "oauth_integration_test.go",
+        "session_test.go",
     ],
     embed = [":auth"],
     deps = [
         "//internal/auth/authtest",
         "//internal/config",
+        "@com_github_alicebob_miniredis_v2//:miniredis",
+        "@com_github_danielgtaylor_huma_v2//:huma",
+        "@com_github_danielgtaylor_huma_v2//adapters/humago",
+        "@com_github_redis_go_redis_v9//:go-redis",
     ],
 )
