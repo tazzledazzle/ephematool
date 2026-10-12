@@ -31,23 +31,28 @@ wait_status() {
 }
 
 # 1. All 10 services, exact order, all healthy (poll up to 120s from stack start).
+# The dashboard row's telemetry comes from a browser, which only exports while a page is open.
+# This script has no browser, so "dashboard" may legitimately be degraded with a telemetry-signal
+# detail; the Playwright status spec asserts all 10 rows Healthy with a live browser.
+ALL_OK='(.services | length == 10) and ([.services[] | select(.id != "dashboard") | .status] | all(. == "healthy"))
+  and ([.services[] | select(.id == "dashboard") | (.status == "healthy" or (.status == "degraded" and (.detail | test("telemetry signal"))))] | all)'
 ensure_session
 deadline=$((SECONDS + 120))
 body=""
 while :; do
   body="$(api_get /api/status 2>/dev/null || true)"
-  if [ -n "$body" ] && echo "$body" | jq -e '(.services | length == 10) and ([.services[].status] | all(. == "healthy"))' >/dev/null 2>&1; then
+  if [ -n "$body" ] && echo "$body" | jq -e "$ALL_OK" >/dev/null 2>&1; then
     break
   fi
   [ "$SECONDS" -lt "$deadline" ] || {
     echo "$body" | jq -c '.services[]? | {id, status, detail}' >&2 || true
-    fail "/api/status did not report 10 healthy services within 120s"
+    fail "/api/status did not report 10 services (dashboard may lack a browser signal, the rest healthy) within 120s"
   }
   sleep 2
 done
 echo "$body" | jq -e --argjson want "$WANT_IDS" '[.services[].id] == $want' >/dev/null \
   || fail "service ids are not in the contract order"
-pass "/api/status reports 10 healthy services in order"
+pass "/api/status reports 10 services in order, all healthy (dashboard healthy or awaiting a browser signal)"
 
 # 2. Stop loki: Down within 25s (2 probe cycles + margin).
 "${COMPOSE[@]}" stop loki >/dev/null

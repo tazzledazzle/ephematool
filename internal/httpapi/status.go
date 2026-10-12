@@ -8,10 +8,11 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/ephematool/ephematool/internal/buildinfo"
+	"github.com/ephematool/ephematool/internal/status"
 )
 
-// ServiceStatus is one row of the telemetry status page. The prober in plan
-// 01-06 fills the list.
+// ServiceStatus is one row of the telemetry status page, filled from the
+// prober's cached snapshot.
 type ServiceStatus struct {
 	ID           string     `json:"id"`
 	Name         string     `json:"name"`
@@ -45,11 +46,15 @@ func registerStatus(api huma.API, deps Deps) {
 	huma.Get(api, "/api/status", func(ctx context.Context, _ *struct{}) (*StatusResponse, error) {
 		enqueued := maybeEnqueuePing(ctx, deps)
 		slog.InfoContext(ctx, "status.served", "ping_enqueued", enqueued)
+		generatedAt, services := time.Now().UTC(), []ServiceStatus{}
+		if deps.Status != nil {
+			generatedAt, services = snapshotServices(deps.Status)
+		}
 		return &StatusResponse{Body: StatusBody{
-			GeneratedAt: time.Now().UTC(),
+			GeneratedAt: generatedAt,
 			GrafanaURL:  deps.Config.GrafanaPublicURL,
 			Build:       BuildSection{API: buildinfo.Info()},
-			Services:    []ServiceStatus{},
+			Services:    services,
 		}}, nil
 	}, func(o *huma.Operation) {
 		o.OperationID = "get-status"
@@ -57,6 +62,27 @@ func registerStatus(api huma.API, deps Deps) {
 		// RequireSession answers 401 without a signed-in user (T-01-28).
 		o.Security = []map[string][]string{{"session": {}}}
 	})
+}
+
+// snapshotServices maps the cached prober snapshot to the API model. Before the
+// first probe completes the generation time is zero; report "now" instead.
+func snapshotServices(p *status.Prober) (time.Time, []ServiceStatus) {
+	at, results := p.Snapshot()
+	if at.IsZero() {
+		at = time.Now().UTC()
+	}
+	out := make([]ServiceStatus, 0, len(results))
+	for i, r := range results {
+		out = append(out, ServiceStatus{
+			ID:           r.ID,
+			Name:         status.Services[i].Name,
+			Group:        status.Services[i].Group,
+			Status:       r.Status,
+			LastSignalAt: r.LastSignalAt,
+			Detail:       r.Detail,
+		})
+	}
+	return at, out
 }
 
 // maybeEnqueuePing enqueues the ping task unless throttled. Failures are logged

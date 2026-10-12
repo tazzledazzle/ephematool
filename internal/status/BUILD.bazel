@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "status",
+    srcs = [
+        "lastsignal.go",
+        "model.go",
+        "prober.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/status",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/telemetry",
+        "@io_opentelemetry_go_otel//attribute",
+        "@io_opentelemetry_go_otel_metric//:metric",
+    ],
+)
+
+go_test(
+    name = "status_test",
+    srcs = ["prober_test.go"],
+    embed = [":status"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_opentelemetry_go_otel_metric//noop",
+        "@io_opentelemetry_go_otel_sdk_metric//:metric",
+        "@io_opentelemetry_go_otel_sdk_metric//metricdata",
+    ],
+)

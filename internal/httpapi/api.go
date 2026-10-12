@@ -15,6 +15,7 @@ import (
 	"github.com/ephematool/ephematool/internal/buildinfo"
 	"github.com/ephematool/ephematool/internal/config"
 	"github.com/ephematool/ephematool/internal/queue"
+	"github.com/ephematool/ephematool/internal/status"
 	"github.com/ephematool/ephematool/internal/store"
 )
 
@@ -35,6 +36,8 @@ type Deps struct {
 	Sessions *scs.SessionManager
 	Queries  *store.Queries
 	Auth     *auth.Handlers
+	// Status is the background prober whose cached snapshot backs /api/status.
+	Status *status.Prober
 }
 
 func (d Deps) enqueuer() Enqueuer {

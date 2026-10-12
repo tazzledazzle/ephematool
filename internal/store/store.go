@@ -34,6 +34,17 @@ func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// OpenUntraced creates a small pool without the otelpgx tracer. The status
+// prober uses it so health probes do not create a trace every few seconds.
+func OpenUntraced(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse database url: %w", err)
+	}
+	cfg.MaxConns = 1
+	return pgxpool.NewWithConfig(ctx, cfg)
+}
+
 // Migrate applies the embedded goose migrations.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	goose.SetBaseFS(migrations)

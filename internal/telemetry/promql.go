@@ -25,3 +25,9 @@ const (
 // different metrics collapse to the same labelset and the query errors.
 // Non-Go services (the browser dashboard) need their own selector in plan 01-06.
 const LastSignalQuery = `max by (service_name) (timestamp(go_goroutine_count{service_namespace="ephematool"}))`
+
+// DashboardLastSignalQuery is the browser dashboard's counterpart of
+// LastSignalQuery. The browser emits no Go runtime metrics, so it uses the
+// page-view counter verified in plan 01-05. The browser exports every 15s, but
+// only while a page is open.
+const DashboardLastSignalQuery = `max by (service_name) (timestamp(ephematool_ui_page_views_total{service_name="ephematool-dashboard"}))`
