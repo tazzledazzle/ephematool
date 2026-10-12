@@ -33,6 +33,47 @@
         ],
         "type": "object"
       },
+      "ConfigBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/schemas/ConfigBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowedOrgs": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "allowedTeams": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "githubConfigured": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "githubConfigured",
+          "allowedOrgs",
+          "allowedTeams"
+        ],
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -112,6 +153,49 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "MeBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/schemas/MeBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "login": {
+            "type": "string"
+          },
+          "orgs": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "role": {
+            "enum": [
+              "admin",
+              "viewer"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "login",
+          "avatarUrl",
+          "role",
+          "orgs"
+        ],
         "type": "object"
       },
       "ServiceStatus": {
@@ -198,6 +282,13 @@
         ],
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "session": {
+        "in": "cookie",
+        "name": "ephematool_session",
+        "type": "apiKey"
+      }
     }
   },
   "info": {
@@ -206,6 +297,88 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/auth/config": {
+      "get": {
+        "operationId": "get-auth-config",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Public sign-in configuration"
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "post-auth-logout",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Sign out"
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "get-me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Current signed-in user"
+      }
+    },
     "/api/status": {
       "get": {
         "operationId": "get-status",

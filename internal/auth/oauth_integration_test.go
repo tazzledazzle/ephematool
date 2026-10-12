@@ -125,7 +125,7 @@ func TestOAuthStateMismatch(t *testing.T) {
 
 func TestOAuthPKCESent(t *testing.T) {
 	e := authtest.NewEnv(t)
-	e.StartLogin(t, "/")
+	e.Authorize(t, e.StartLogin(t, "/"), "octo-viewer")
 	q := e.Fake.LastAuthorize()
 	if q.Get("code_challenge_method") != "S256" || q.Get("code_challenge") == "" {
 		t.Fatalf("PKCE params missing: %v", q)

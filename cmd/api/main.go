@@ -18,10 +18,12 @@ import (
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/ephematool/ephematool/internal/auth"
 	"github.com/ephematool/ephematool/internal/buildinfo"
 	"github.com/ephematool/ephematool/internal/config"
 	"github.com/ephematool/ephematool/internal/httpapi"
 	"github.com/ephematool/ephematool/internal/queue"
+	"github.com/ephematool/ephematool/internal/store"
 	"github.com/ephematool/ephematool/internal/telemetry"
 )
 
@@ -36,13 +38,18 @@ func main() {
 			fmt.Fprintln(os.Stderr, "fatal:", err)
 			os.Exit(1)
 		}
+	case "migrate":
+		if err := migrate(); err != nil {
+			fmt.Fprintln(os.Stderr, "fatal:", err)
+			os.Exit(1)
+		}
 	case "openapi":
 		if err := printOpenAPI(); err != nil {
 			fmt.Fprintln(os.Stderr, "fatal:", err)
 			os.Exit(1)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q (serve|openapi)\n", cmd)
+		fmt.Fprintf(os.Stderr, "unknown command %q (serve|migrate|openapi)\n", cmd)
 		os.Exit(2)
 	}
 }
@@ -59,6 +66,21 @@ func printOpenAPI() error {
 	}
 	_, err = fmt.Fprintln(os.Stdout, buf.String())
 	return err
+}
+
+func migrate() error {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	pool, err := store.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	return store.Migrate(ctx, pool)
 }
 
 func serve() error {
@@ -93,10 +115,26 @@ func serve() error {
 	}
 	defer rdb.Close()
 
+	pool, err := store.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("open database: %w", err)
+	}
+	defer pool.Close()
+	if cfg.MigrateOnStart {
+		if err := store.Migrate(ctx, pool); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+	}
+	queries := store.New(pool)
+	sessions := auth.NewSessionManager(rdb, cfg)
+
 	q := queue.NewClient(cfg.RedisAddr)
 	defer q.Close()
 
-	handler, _ := httpapi.New(httpapi.Deps{Config: cfg, Redis: rdb, Queue: q})
+	handler, _ := httpapi.New(httpapi.Deps{
+		Config: cfg, Redis: rdb, Queue: q,
+		Sessions: sessions, Queries: queries, Auth: auth.NewHandlers(cfg, sessions, queries),
+	})
 	srv := &http.Server{Addr: cfg.HTTPAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 
 	errCh := make(chan error, 1)
