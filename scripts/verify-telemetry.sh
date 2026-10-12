@@ -22,6 +22,8 @@ shift
 
 if [ "$sub" = "all" ]; then
   for f in "$DIR"/*.sh; do
+    # fresh builds a second stack from a clone (bazel run //:verify_fresh); never part of `all`.
+    case "$(basename "$f")" in fresh*) continue ;; esac
     echo "== $(basename "$f" .sh)"
     bash "$f" "$@"
   done

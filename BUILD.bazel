@@ -81,6 +81,21 @@ test_suite(
     ]
 ]
 
+# SC3: fresh clone, one command, all 10 services healthy. bazel run //:verify_fresh
+sh_binary(
+    name = "verify_fresh",
+    srcs = ["tools/stack.sh"],
+    args = [
+        "verify-telemetry",
+        "fresh",
+    ],
+    tags = [
+        "local",
+        "manual",
+        "requires-docker",
+    ],
+)
+
 # Playwright e2e against the up_fake stack: bazel run //:e2e
 alias(
     name = "e2e",
