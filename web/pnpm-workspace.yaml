@@ -1,0 +1,7 @@
+# Read only by Bazel (rules_js). npm stays the package manager: web/package.json and
+# web/package-lock.json are the dependency source of truth; rules_js derives
+# web/pnpm-lock.yaml from package-lock.json.
+#
+# No dependency needs its install scripts (fsevents ships prebuilt binaries).
+allowBuilds:
+  fsevents: false

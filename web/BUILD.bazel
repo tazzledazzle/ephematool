@@ -1,14 +1,159 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library")
 load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("@npm//web:@playwright/test/package_json.bzl", playwright_bin = "bin")
+load("@npm//web:openapi-typescript/package_json.bzl", openapi_typescript_bin = "bin")
+load("@npm//web:typescript/package_json.bzl", typescript_bin = "bin")
+load("@npm//web:vite/package_json.bzl", vite_bin = "bin")
+load("@npm//web:vitest/package_json.bzl", vitest_bin = "bin")
+
+# npm stays the package manager: package.json + package-lock.json are the source of truth.
+# rules_js derives pnpm-lock.yaml from package-lock.json; commit it alongside.
+npm_link_all_packages(name = "node_modules")
 
 exports_files([
     "package.json",
     "package-lock.json",
     "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
 ])
+
+js_library(
+    name = "srcs",
+    srcs = glob(
+        [
+            "src/**/*.ts",
+            "src/**/*.tsx",
+            "src/**/*.css",
+        ],
+        exclude = [
+            "src/**/*.test.ts",
+            "src/**/*.test.tsx",
+        ],
+    ) + [
+        "index.html",
+        "components.json",
+    ],
+)
+
+js_library(
+    name = "configs",
+    srcs = [
+        "package.json",
+        "tsconfig.app.json",
+        "tsconfig.json",
+        "tsconfig.node.json",
+        "vite.config.ts",
+        "vitest.config.ts",
+        "vitest.bazel.config.ts",
+        "playwright.config.ts",
+    ],
+)
+
+_NODE_MODULES = [":node_modules"]
+
+_UNIT_TESTS = glob(
+    [
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+    ],
+    allow_empty = True,
+)
+
+_E2E = glob(
+    ["e2e/**"],
+    allow_empty = True,
+)
+
+# ---------------------------------------------------------------- build (npm run build)
+# Type check: the `tsc -b` half of `npm run build`.
+typescript_bin.tsc_test(
+    name = "typecheck",
+    args = [
+        "-b",
+        "--noEmit",
+    ],
+    chdir = package_name(),
+    # .d.ts sources (src/vite-env.d.ts) are types, which js_test omits from runfiles by default.
+    include_types = True,
+    data = [
+        ":configs",
+        ":srcs",
+    ] + _UNIT_TESTS + _E2E + _NODE_MODULES,
+)
+
+# Production SPA bundle: the `vite build` half of `npm run build` -> web/dist.
+# Container images are still built by web/Dockerfile (docker compose).
+vite_bin.vite(
+    name = "dist",
+    srcs = [
+        ":configs",
+        ":srcs",
+    ] + _NODE_MODULES,
+    args = ["build"],
+    chdir = package_name(),
+    # Rolldown (Vite 8) canonicalizes paths natively, which escapes the sandbox's symlink
+    # tree and breaks index.html asset naming; build in the execroot instead.
+    execution_requirements = {"no-sandbox": "1"},
+    out_dirs = ["dist"],
+)
+
+# ---------------------------------------------------------------- tests
+# Vitest unit suite (npm test -- --run).
+vitest_bin.vitest_test(
+    name = "test",
+    args = [
+        "run",
+        "--config",
+        "vitest.bazel.config.ts",
+    ],
+    chdir = package_name(),
+    data = [
+        ":configs",
+        ":srcs",
+    ] + _UNIT_TESTS + _NODE_MODULES,
+)
+
+# Playwright e2e against the running up-fake stack (http://localhost:8080).
+# Needs `bazel run //:up_fake` first and the Playwright browsers installed on the host
+# (`npm --prefix web exec -- playwright install chromium`); hence manual and unsandboxed.
+#   bazel run //:e2e
+playwright_bin.playwright_test(
+    name = "e2e",
+    args = ["test"],
+    chdir = package_name(),
+    data = [
+        ":configs",
+    ] + _E2E + _NODE_MODULES,
+    tags = [
+        "external",
+        "local",
+        "manual",
+        "no-sandbox",
+        "requires-docker",
+        "requires-network",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
+# ---------------------------------------------------------------- codegen
+# openapi-typescript over the generated OpenAPI document (npm run gen).
+openapi_typescript_bin.openapi_typescript(
+    name = "schema_gen",
+    srcs = ["//api:_gen/openapi.json"],
+    outs = ["_gen/schema.d.ts"],
+    args = [
+        "../api/_gen/openapi.json",
+        "-o",
+        "_gen/schema.d.ts",
+    ],
+    chdir = package_name(),
+)
 
 write_source_files(
     name = "gen",
     files = {
+        "src/api/schema.d.ts": ":_gen/schema.d.ts",
         "src/gen/conventions.gen.ts": "//internal/conventions:_gen/conventions.gen.ts",
     },
     suggested_update_target = "//:gen",
