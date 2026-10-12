@@ -1,5 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
 # gazelle:prefix github.com/ephematool/ephematool
 # gazelle:go_naming_convention import
@@ -52,4 +53,37 @@ write_source_files(
 test_suite(
     name = "check_gen",
     tests = ["%s:gen_tests" % p for p in _GEN_PACKAGES],
+)
+
+# ---------------------------------------------------------------- local stack
+# `bazel run` wrappers around docker compose and scripts/ (see tools/stack.sh). They run in
+# the workspace root and stamp GIT_COMMIT / BUILT_AT. Images are still built from the
+# Dockerfiles by compose. The ordered full gate is ./tools/verify.sh (not a bazel target:
+# bazel must not be invoked from inside `bazel run`).
+[
+    sh_binary(
+        name = name,
+        srcs = ["tools/stack.sh"],
+        args = [cmd],
+        tags = [
+            "local",
+            "manual",
+            "requires-docker",
+        ],
+    )
+    for name, cmd in [
+        ("up", "up"),
+        ("up_fake", "up-fake"),
+        ("down", "down"),
+        ("clean", "clean"),
+        ("logs", "logs"),
+        ("verify_telemetry", "verify-telemetry"),
+    ]
+]
+
+# Playwright e2e against the up_fake stack: bazel run //:e2e
+alias(
+    name = "e2e",
+    actual = "//web:e2e",
+    tags = ["manual"],
 )
