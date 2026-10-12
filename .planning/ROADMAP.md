@@ -75,7 +75,49 @@ Plans:
   5. A viewer cannot create; a creator can; and each create is recorded in an append-only audit log showing who did it and when
   6. Opening a preview URL while signed out sends the SRE through the platform login, and only an allowed signed-in user reaches the preview; the preview app never receives the platform session cookie
 
-**Plans**: TBD
+**Plans:** 17 plans
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Dependency provenance gate: pins + official checksums in deploy/kind/versions.env, blocking human approval
+- [ ] 02-02-PLAN.md — Config contract + validation (WR-03/08), compose pre-wiring, dev secrets, generated conventions env file and widened D-09 gate
+- [ ] 02-03-PLAN.md — Fake GitHub: App tokens, refs/PRs, GHCR, workflow_dispatch, runs/ETag/jobs, scripted lifecycle, preview health stand-in
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-04-PLAN.md — Store: environments + append-only audit_events under two DB roles, goose Provider lock (WR-11), audit package, two-role test harness
+- [ ] 02-05-PLAN.md — GitHub App client (ghapp): app JWT/installation token, team check, ref/PR/SHA resolution, GHCR check, dispatch/correlation/ETag polling
+- [ ] 02-06-PLAN.md — Roles: creator, request-time resolver (WR-01), secure-by-default routes (WR-02), WR-10, Creator badge
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-07-PLAN.md — Template catalog: web-app Helm chart + values.schema.json, sizes.yaml presets, jsonschema field errors, form trimmer
+- [ ] 02-08-PLAN.md — Preview auth backend: HS256 ticket/cookie, ForwardAuth endpoint, one-time ticket mint
+- [ ] 02-09-PLAN.md — Environment telemetry: collector */environments pipelines on :4320, sampleapp, env-telemetry check
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-10-PLAN.md — Create API: ordered validation, 422 field errors / 403 guardrail, audit on every outcome, read endpoints
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-11-PLAN.md — Worker: dispatch/poll/probe/sweep state machine, synthetic Actions spans, env-trace check
+- [ ] 02-12-PLAN.md — Dashboard: primitives, nav, environments launch page and detail/progress page
+- [ ] 02-13-PLAN.md — kind cluster + Traefik gate + fenced provisioner/deployer RBAC + VAPs, environments repo (workflow, provision.sh, baseline), kind_verify
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-14-PLAN.md — Dashboard create form (schema-driven fields, size presets, field errors) + Playwright create flow
+- [ ] 02-15-PLAN.md — Compose Traefik+whoami preview gate overlay, preview-gate check, redaction extension, nginx security headers
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 02-16-PLAN.md — Admin audit log (API + page) and preview interstitial/denied pages + Playwright audit/preview specs
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 02-17-PLAN.md — Runner/publish commands, README runbook, UAT list, full phase gate
+
 **UI hint**: yes
 
 ### Phase 3: Inventory, Lifecycle & Destroy
@@ -166,7 +208,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Telemetry Spine & GitHub Login | 8/8 | Complete    | 2026-10-12 |
-| 2. Create a Secure Preview Environment | 0/TBD | Not started | - |
+| 2. Create a Secure Preview Environment | 0/17 | Planned | - |
 | 3. Inventory, Lifecycle & Destroy | 0/TBD | Not started | - |
 | 4. Live Health & Drift Detection | 0/TBD | Not started | - |
 | 5. TTL, Extension & Auto-Teardown | 0/TBD | Not started | - |
