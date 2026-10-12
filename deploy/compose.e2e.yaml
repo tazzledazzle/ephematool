@@ -1,0 +1,31 @@
+# Overlay for dev/e2e login with the fake GitHub. NOT for real deployments (T-01-26).
+services:
+  fakegithub:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: go-runtime
+      args:
+        CMD: fakegithub
+    # The fakegithub binary has no subcommands; ignore the image default CMD.
+    command: []
+    environment:
+      FAKEGITHUB_ADDR: ":9999"
+    ports:
+      - "127.0.0.1:9999:9999"
+
+  api:
+    environment:
+      - GITHUB_CLIENT_ID=e2e-client
+      - GITHUB_CLIENT_SECRET=e2e-secret
+      # Browser-facing authorize URL; server-facing token and API URLs.
+      - GITHUB_AUTHORIZE_URL=http://localhost:9999/login/oauth/authorize
+      - GITHUB_TOKEN_URL=http://fakegithub:9999/login/oauth/access_token
+      - GITHUB_API_URL=http://fakegithub:9999/
+      - ALLOWED_ORGS=ephematool-e2e
+      - ALLOWED_TEAMS=partner-org/sre
+      - ADMIN_LOGINS=Octo-Admin
+      - PING_THROTTLE=1s
+    depends_on:
+      fakegithub:
+        condition: service_started
