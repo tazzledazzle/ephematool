@@ -20,3 +20,15 @@ exports_files([
 
 # bazel run //:gazelle  -- regenerate Go BUILD files after adding/removing imports or files.
 gazelle(name = "gazelle")
+
+# Docker-backed Go integration tests (`//go:build integration`, testcontainers).
+#   bazel test --config=integration //:test_integration
+# --config=integration builds with the `integration` tag, drops -test.short and runs the
+# tests outside the sandbox with the Docker socket reachable. Add new packages that
+# contain integration-tagged tests here.
+test_suite(
+    name = "test_integration",
+    tests = [
+        "//internal/auth:auth_test",
+    ],
+)
