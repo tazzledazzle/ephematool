@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Shared helpers for scripts/verify.d/*.sh. Source this file; do not execute it.
 
-API_URL="${API_URL:-http://127.0.0.1:8081}"
+# Through nginx (the same-origin front door), not the API port.
+API_URL="${API_URL:-http://127.0.0.1:8080}"
 TEMPO_URL="${TEMPO_URL:-http://127.0.0.1:3200}"
 PROM_URL="${PROM_URL:-http://127.0.0.1:9090}"
 LOKI_URL="${LOKI_URL:-http://127.0.0.1:3100}"
@@ -25,12 +26,51 @@ wait_http() {
   fail "timed out after ${timeout}s waiting for $url"
 }
 
+# header_value FILE NAME -> value of the first matching response header
+header_value() {
+  tr -d '\r' < "$1" | awk -v n="$(echo "$2" | tr '[:upper:]' '[:lower:]'):" 'tolower($1)==n {print $2; exit}'
+}
+
+# ensure_session [LOGIN=${LOGIN:-octo-admin}]
+# Signs in through the fake GitHub with curl and leaves ephematool_session in $VERIFY_TMP/cookies.
+ensure_session() {
+  local login="${1:-${LOGIN:-octo-admin}}" jar="$VERIFY_TMP/cookies" loc cb
+  : > "$jar"
+  curl -sS -o /dev/null -D "$VERIFY_TMP/oauth-start" -c "$jar" -b "$jar" \
+    "$API_URL/api/auth/github/login" || fail "ensure_session: login start request failed"
+  loc="$(header_value "$VERIFY_TMP/oauth-start" location)"
+  [ -n "$loc" ] || fail "ensure_session: /api/auth/github/login returned no Location (is GitHub configured? use bazel run //:up_fake)"
+  curl -sS -o /dev/null -D "$VERIFY_TMP/oauth-authorize" "${loc}&login=${login}" \
+    || fail "ensure_session: fake GitHub authorize request failed"
+  cb="$(header_value "$VERIFY_TMP/oauth-authorize" location)"
+  [ -n "$cb" ] || fail "ensure_session: fake GitHub returned no callback Location for $login"
+  # The callback URL carries PUBLIC_BASE_URL's origin (localhost); replay it against API_URL
+  # so the cookie jar sees a single host.
+  cb="$(printf '%s' "$cb" | sed -E 's#^https?://[^/]+##')"
+  curl -sS -o /dev/null -c "$jar" -b "$jar" "$API_URL$cb" || fail "ensure_session: callback request failed"
+  grep -q 'ephematool_session' "$jar" || fail "ensure_session: no ephematool_session cookie after callback for $login"
+}
+
 # api_get PATH -> body on stdout; headers in $VERIFY_TMP/last-headers; trace id in $VERIFY_TMP/last-trace-id
+# Sends the session cookie jar; on a 401 it signs in once and retries.
 api_get() {
-  local path="$1"
-  curl -fsS -D "$VERIFY_TMP/last-headers" "$API_URL$path" || return 1
-  tr -d '\r' < "$VERIFY_TMP/last-headers" \
-    | awk 'tolower($1)=="x-trace-id:" {print $2}' > "$VERIFY_TMP/last-trace-id"
+  local path="$1" jar="$VERIFY_TMP/cookies" code attempt
+  [ -f "$jar" ] || : > "$jar"
+  for attempt in 1 2; do
+    code="$(curl -sS -o "$VERIFY_TMP/last-body" -w '%{http_code}' -D "$VERIFY_TMP/last-headers" \
+      -b "$jar" -c "$jar" "$API_URL$path")" || return 1
+    if [ "$code" = "401" ] && [ "$attempt" = "1" ]; then
+      ensure_session
+      continue
+    fi
+    break
+  done
+  case "$code" in
+    2??) ;;
+    *) echo "GET $path -> HTTP $code" >&2; return 1 ;;
+  esac
+  header_value "$VERIFY_TMP/last-headers" x-trace-id > "$VERIFY_TMP/last-trace-id"
+  cat "$VERIFY_TMP/last-body"
 }
 
 # tempo_services TRACE_ID [TIMEOUT] -> sorted unique service.name values
