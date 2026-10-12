@@ -32,7 +32,7 @@ type Prober struct {
 	c        Checks
 	interval time.Duration
 	timeout  time.Duration
-	client   *http.Client // plain client: no otelhttp, so probes create no spans
+	client   *http.Client // plain client with no tracing transport, so probes create no spans
 
 	up       metric.Int64Gauge
 	duration metric.Float64Histogram

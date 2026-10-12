@@ -16,7 +16,7 @@ import (
 // NewLastSignal returns a LastSignal check that queries Prometheus with the
 // constant PromQL from internal/telemetry. baseURL comes from server config only.
 func NewLastSignal(baseURL string, timeout time.Duration) func(context.Context) (map[string]time.Time, error) {
-	// Plain client on purpose: no otelhttp, so queries create no traces.
+	// Plain client on purpose (no tracing transport), so queries create no traces.
 	client := &http.Client{Timeout: timeout}
 	base := strings.TrimRight(baseURL, "/")
 	return func(ctx context.Context) (map[string]time.Time, error) {
