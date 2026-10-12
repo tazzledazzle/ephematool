@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { setPageLoadContext } from "@/api/client";
 import { initTelemetry } from "@/telemetry";
 import { startPageLoad } from "@/telemetry/pageLoad";
+import { ThemeProvider } from "@/lib/ThemeProvider";
 import App from "./App";
 import "./index.css";
 
@@ -16,6 +17,8 @@ setPageLoadContext(pageLoad.context, pageLoad.end);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 );

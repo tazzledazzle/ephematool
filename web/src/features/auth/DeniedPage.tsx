@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { api, ApiError, pageLoadDone } from "@/api/client";
 import { PageHeading } from "@/components/PageHeading";
+import { Button } from "@/components/ui/button";
 
 // Public page: it must not depend on a session. `login` comes from the URL and is
 // rendered as React text only; the required orgs come from the API, never the URL.
 export function DeniedPage() {
+  const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { login?: string };
   const cfg = useQuery({
     queryKey: ["auth-config"],
@@ -34,12 +36,15 @@ export function DeniedPage() {
             ? "an approved organization"
             : required.map((r, i) => (
                 <span key={r}>
-                  {i > 0 && ", "}
+                  {i > 0 && " or "}
                   <code className="font-mono">{r}</code>
                 </span>
               ))}
           . Ask an owner of that organization to add you, then sign in again.
         </p>
+        <Button variant="secondary" className="min-h-11 w-full" onClick={() => void navigate({ to: "/login" })}>
+          Try a different account
+        </Button>
       </div>
     </main>
   );

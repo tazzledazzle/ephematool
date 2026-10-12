@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, Outlet, useNavigate } from "@tanstack/react-router";
 import { api, ApiError } from "@/api/client";
-import { RoleBadge } from "@/components/RoleBadge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserMenu } from "@/components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/features/auth/useMe";
@@ -16,10 +15,8 @@ export function AppShell() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [signOutFailed, setSignOutFailed] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   const signOut = async () => {
-    setSigningOut(true);
     setSignOutFailed(false);
     try {
       const { response } = await api.POST("/api/auth/logout");
@@ -28,8 +25,6 @@ export function AppShell() {
       await navigate({ to: "/login", replace: true });
     } catch {
       setSignOutFailed(true);
-    } finally {
-      setSigningOut(false);
     }
   };
 
@@ -58,19 +53,14 @@ export function AppShell() {
           </ul>
         </nav>
         <div className="ml-auto flex items-center gap-3">
-          {me.isPending && <Skeleton className="h-8 w-48" />}
+          {me.isPending && <Skeleton className="size-8 rounded-full" />}
           {me.data && (
-            <>
-              <Avatar className="size-8">
-                <AvatarImage src={me.data.avatarUrl} alt="" />
-                <AvatarFallback>{me.data.login.slice(0, 1).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm">{me.data.login}</span>
-              <RoleBadge role={me.data.role} />
-              <Button variant="outline" disabled={signingOut} onClick={signOut}>
-                Sign out
-              </Button>
-            </>
+            <UserMenu
+              login={me.data.login}
+              avatarUrl={me.data.avatarUrl}
+              role={me.data.role}
+              onSignOut={signOut}
+            />
           )}
         </div>
       </header>
