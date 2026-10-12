@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Telemetry Spine & GitHub Login | 9/8 | Complete   | 2026-10-12 |
+| 1. Telemetry Spine & GitHub Login | 8/8 | Complete    | 2026-10-12 |
 | 2. Create a Secure Preview Environment | 0/TBD | Not started | - |
 | 3. Inventory, Lifecycle & Destroy | 0/TBD | Not started | - |
 | 4. Live Health & Drift Detection | 0/TBD | Not started | - |
