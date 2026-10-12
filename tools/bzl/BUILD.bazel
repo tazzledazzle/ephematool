@@ -1,0 +1,8 @@
+exports_files(["go.bzl"])
+
+# True under --config=integration (.bazelrc).
+config_setting(
+    name = "integration",
+    define_values = {"integration": "true"},
+    visibility = ["//visibility:public"],
+)

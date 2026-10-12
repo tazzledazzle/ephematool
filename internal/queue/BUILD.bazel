@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "queue",
+    srcs = [
+        "client.go",
+        "heartbeat.go",
+        "middleware.go",
+        "server.go",
+        "tasks.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/queue",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@com_github_hibiken_asynq//:asynq",
+        "@com_github_redis_go_redis_v9//:go-redis",
+        "@io_opentelemetry_go_otel//:otel",
+        "@io_opentelemetry_go_otel//attribute",
+        "@io_opentelemetry_go_otel//codes",
+        "@io_opentelemetry_go_otel//propagation",
+        "@io_opentelemetry_go_otel_metric//:metric",
+        "@io_opentelemetry_go_otel_trace//:trace",
+    ],
+)
+
+go_test(
+    name = "queue_test",
+    srcs = ["middleware_test.go"],
+    embed = [":queue"],
+    deps = [
+        "@com_github_hibiken_asynq//:asynq",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_opentelemetry_go_otel//:otel",
+        "@io_opentelemetry_go_otel//propagation",
+        "@io_opentelemetry_go_otel_sdk//trace",
+        "@io_opentelemetry_go_otel_sdk//trace/tracetest",
+        "@io_opentelemetry_go_otel_sdk_metric//:metric",
+        "@io_opentelemetry_go_otel_sdk_metric//metricdata",
+        "@io_opentelemetry_go_otel_trace//:trace",
+    ],
+)

@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------- defaults
+common --enable_bzlmod
+common --enable_workspace=false
+# Aspect rules ship opt-out usage telemetry; opt out.
+common --repo_env=DO_NOT_TRACK=1
+
+build --incompatible_strict_action_env
+# Go builds with cgo off, like the Dockerfile (CGO_ENABLED=0). This also makes sqlc use
+# its pure-Go/wasm Postgres parser instead of compiling libpg_query from C.
+common --@io_bazel_rules_go//go/config:pure
+build --nolegacy_external_runfiles
+build --verbose_failures
+# Targets tagged `manual` (e2e, gazelle) are skipped by `//...` and only run when named.
+test --test_output=errors
+
+# Go tests get `-test.short` by default (like the old `go test ./... -short`); see
+# tools/bzl/go.bzl. --config=integration drops it (like `go test -tags integration`).
+
+# ---------------------------------------------------------------- --config=integration
+# Equivalent of `go test -tags integration ./...`: builds Go with the `integration`
+# build tag and runs tests outside the sandbox with the Docker socket reachable
+# (testcontainers). Entry point: bazel test --config=integration //:test_integration
+test:integration --@io_bazel_rules_go//go/config:tags=integration
+test:integration --strategy=TestRunner=local
+test:integration --test_env=DOCKER_HOST
+test:integration --test_env=DOCKER_CONTEXT
+test:integration --test_env=HOME
+test:integration --test_env=TESTCONTAINERS_RYUK_DISABLED
+test:integration --test_env=TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
+test:integration --test_env=TESTCONTAINERS_HOST_OVERRIDE
+test:integration --test_timeout=900
+test:integration --define=integration=true
+
+# ---------------------------------------------------------------- --config=ci
+build:ci --noshow_progress
+build:ci --show_timestamps
+build:ci --announce_rc
+build:ci --color=no
+build:ci --curses=no
+build:ci --keep_going
+test:ci --test_output=errors
+
+# Machine-local overrides (git-ignored).
+try-import %workspace%/user.bazelrc

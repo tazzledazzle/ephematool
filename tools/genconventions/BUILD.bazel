@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "genconventions_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/ephematool/ephematool/tools/genconventions",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "genconventions",
+    embed = [":genconventions_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "genconventions_test",
+    srcs = ["main_test.go"],
+    embed = [":genconventions_lib"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

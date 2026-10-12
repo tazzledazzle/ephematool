@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "worker_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/ephematool/ephematool/cmd/worker",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/buildinfo",
+        "//internal/config",
+        "//internal/queue",
+        "//internal/telemetry",
+        "@com_github_redis_go_redis_extra_redisotel_v9//:redisotel",
+        "@com_github_redis_go_redis_v9//:go-redis",
+    ],
+)
+
+go_binary(
+    name = "worker",
+    embed = [":worker_lib"],
+    visibility = ["//visibility:public"],
+)

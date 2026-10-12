@@ -1,0 +1,22 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/ephematool/ephematool
+# gazelle:go_naming_convention import
+# gazelle:proto disable_global
+# gazelle:build_tags integration
+# gazelle:map_kind go_test go_test //tools/bzl:go.bzl
+# gazelle:exclude web
+# gazelle:exclude deploy
+# gazelle:exclude scripts
+# gazelle:exclude .planning
+# gazelle:exclude bazel-*
+
+exports_files([
+    "go.mod",
+    "go.sum",
+    "sqlc.yaml",
+    ".bazelignore",
+])
+
+# bazel run //:gazelle  -- regenerate Go BUILD files after adding/removing imports or files.
+gazelle(name = "gazelle")

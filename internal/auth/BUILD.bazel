@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "auth",
+    srcs = [
+        "allowlist.go",
+        "handlers.go",
+        "middleware.go",
+        "next.go",
+        "oauth.go",
+        "role.go",
+        "session.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/auth",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/config",
+        "//internal/store",
+        "@com_github_alexedwards_scs_goredisstore//:goredisstore",
+        "@com_github_alexedwards_scs_v2//:scs",
+        "@com_github_danielgtaylor_huma_v2//:huma",
+        "@com_github_google_go_github_v92//github",
+        "@com_github_redis_go_redis_v9//:go-redis",
+        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
+        "@io_opentelemetry_go_otel//:otel",
+        "@io_opentelemetry_go_otel//attribute",
+        "@io_opentelemetry_go_otel_metric//:metric",
+        "@org_golang_x_oauth2//:oauth2",
+    ],
+)
+
+go_test(
+    name = "auth_test",
+    srcs = [
+        "allowlist_test.go",
+        "next_test.go",
+        "oauth_integration_test.go",
+    ],
+    embed = [":auth"],
+    deps = [
+        "//internal/auth/authtest",
+        "//internal/config",
+    ],
+)

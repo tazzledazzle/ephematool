@@ -1,0 +1,47 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "httpapi",
+    srcs = [
+        "api.go",
+        "middleware.go",
+        "status.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/httpapi",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/auth",
+        "//internal/buildinfo",
+        "//internal/config",
+        "//internal/queue",
+        "//internal/store",
+        "@com_github_alexedwards_scs_v2//:scs",
+        "@com_github_danielgtaylor_huma_v2//:huma",
+        "@com_github_danielgtaylor_huma_v2//adapters/humago",
+        "@com_github_redis_go_redis_v9//:go-redis",
+        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
+        "@io_opentelemetry_go_otel//semconv/v1.40.0:v1_40_0",
+        "@io_opentelemetry_go_otel_trace//:trace",
+    ],
+)
+
+go_test(
+    name = "httpapi_test",
+    srcs = ["middleware_test.go"],
+    embed = [":httpapi"],
+    deps = [
+        "//internal/config",
+        "@com_github_danielgtaylor_huma_v2//:huma",
+        "@com_github_danielgtaylor_huma_v2//adapters/humago",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
+        "@io_opentelemetry_go_otel//attribute",
+        "@io_opentelemetry_go_otel_sdk//trace",
+        "@io_opentelemetry_go_otel_sdk//trace/tracetest",
+        "@io_opentelemetry_go_otel_sdk_metric//:metric",
+        "@io_opentelemetry_go_otel_sdk_metric//metricdata",
+        "@io_opentelemetry_go_otel_trace//:trace",
+    ],
+)

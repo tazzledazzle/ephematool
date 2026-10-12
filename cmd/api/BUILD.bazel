@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "api_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/ephematool/ephematool/cmd/api",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/auth",
+        "//internal/buildinfo",
+        "//internal/config",
+        "//internal/httpapi",
+        "//internal/queue",
+        "//internal/store",
+        "//internal/telemetry",
+        "@com_github_redis_go_redis_extra_redisotel_v9//:redisotel",
+        "@com_github_redis_go_redis_v9//:go-redis",
+    ],
+)
+
+go_binary(
+    name = "api",
+    embed = [":api_lib"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "fakegithub_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/ephematool/ephematool/cmd/fakegithub",
+    visibility = ["//visibility:private"],
+    deps = ["//internal/fakegithub"],
+)
+
+go_binary(
+    name = "fakegithub",
+    embed = [":fakegithub_lib"],
+    visibility = ["//visibility:public"],
+)

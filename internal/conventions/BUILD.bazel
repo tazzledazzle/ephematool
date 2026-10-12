@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "conventions",
+    srcs = [
+        "conventions.gen.go",
+        "generate.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/conventions",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "conventions_test",
+    srcs = ["conventions_test.go"],
+    embed = [":conventions"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

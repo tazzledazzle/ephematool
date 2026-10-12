@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "authtest",
+    srcs = ["env.go"],
+    importpath = "github.com/ephematool/ephematool/internal/auth/authtest",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/auth",
+        "//internal/config",
+        "//internal/fakegithub",
+        "//internal/httpapi",
+        "//internal/store",
+        "@com_github_jackc_pgx_v5//pgxpool",
+        "@com_github_redis_go_redis_v9//:go-redis",
+        "@com_github_testcontainers_testcontainers_go_modules_postgres//:postgres",
+        "@com_github_testcontainers_testcontainers_go_modules_redis//:redis",
+    ],
+)
