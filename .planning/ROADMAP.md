@@ -11,7 +11,7 @@ Ephematool is built as vertical MVP slices, each leaving an SRE with a new end-t
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Telemetry Spine & GitHub Login** - SRE logs in with GitHub and the tool's own traces, metrics, and logs are visible from first run
+- [x] **Phase 1: Telemetry Spine & GitHub Login** - SRE logs in with GitHub and the tool's own traces, metrics, and logs are visible from first run (completed 2026-10-12)
 - [ ] **Phase 2: Create a Secure Preview Environment** - SRE creates a validated, isolated, telemetry-emitting environment with one action, traced end to end
 - [ ] **Phase 3: Inventory, Lifecycle & Destroy** - SRE sees every environment with a correct lifecycle state, debugs failures, destroys safely, and spots orphans
 - [ ] **Phase 4: Live Health & Drift Detection** - An environment shows as live only when lifecycle, cluster, and a real probe agree; disagreement is flagged
@@ -33,7 +33,7 @@ Ephematool is built as vertical MVP slices, each leaving an SRE with a new end-t
   2. After one dashboard page load and API call, the SRE can find the resulting trace, a related metric, and correlated logs for the API, worker, and dashboard in the local Grafana stack
   3. A fresh checkout starts the whole stack (API, worker, dashboard, collector, backends) with one command and telemetry flows without extra configuration
 
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 Plans:
 **Wave 1**
 
@@ -52,7 +52,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 01-06-PLAN.md — Telemetry status page: 10-service prober, grouped table, trace-aware error states
-- [ ] 01-07-PLAN.md — Auth UX: sliding 7-day/30-day sessions, denied page, user menu with theme, expiry
+- [x] 01-07-PLAN.md — Auth UX: sliding 7-day/30-day sessions, denied page, user menu with theme, expiry
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Telemetry Spine & GitHub Login | 7/8 | In Progress|  |
+| 1. Telemetry Spine & GitHub Login | 8/8 | Complete   | 2026-10-12 |
 | 2. Create a Secure Preview Environment | 0/TBD | Not started | - |
 | 3. Inventory, Lifecycle & Destroy | 0/TBD | Not started | - |
 | 4. Live Health & Drift Detection | 0/TBD | Not started | - |
