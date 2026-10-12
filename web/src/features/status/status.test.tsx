@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { components } from "@/api/schema";
 import { HealthBadge } from "./HealthBadge";
@@ -7,6 +7,18 @@ import { StatusError } from "./StatusError";
 import { relativeTime } from "./relativeTime";
 
 type Service = components["schemas"]["ServiceStatus"];
+
+// Radix tooltips load a second copy of React under Bazel's symlinked node_modules
+// ("Invalid hook call"), so unit tests stub the tooltip primitives. The real tooltip is
+// exercised by the Playwright status spec.
+vi.mock("@/components/ui/tooltip", () => ({
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <span data-testid="tooltip">{children}</span>
+  ),
+}));
 
 afterEach(() => {
   cleanup();
@@ -124,7 +136,7 @@ describe("StatusError", () => {
       fireEvent.click(screen.getByRole("button", { name: "Copy trace ID" }));
     });
     expect(writeText).toHaveBeenCalledWith(TRACE);
-    expect(within(live).queryByText("Trace ID copied")).toBeTruthy();
+    expect(live.textContent).toBe("Trace ID copied");
 
     await act(async () => {
       vi.advanceTimersByTime(2000);
