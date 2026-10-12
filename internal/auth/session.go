@@ -20,12 +20,11 @@ const (
 	KeyAvatarURL = "avatar_url"
 	KeyRole      = "role"
 	KeyOrgs      = "orgs"
-	KeyLastTouch = "last_touch"
 )
 
 // NewSessionManager builds the Redis-backed session manager. IdleTimeout (D-03)
 // and Lifetime (D-14) are set explicitly because scs defaults to a 24h
-// absolute lifetime (Pitfall 1). Sliding renewal lands in plan 01-07.
+// absolute lifetime (Pitfall 1). scs re-commits (slides) a session on every request while IdleTimeout > 0.
 func NewSessionManager(rdb *redis.Client, cfg config.Config) *scs.SessionManager {
 	sm := scs.New()
 	sm.Store = goredisstore.New(rdb)

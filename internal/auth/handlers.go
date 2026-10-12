@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/danielgtaylor/huma/v2"
@@ -171,7 +170,6 @@ func (h *Handlers) callback(w http.ResponseWriter, r *http.Request) {
 	h.sm.Put(ctx, KeyAvatarURL, gu.GetAvatarURL())
 	h.sm.Put(ctx, KeyRole, role)
 	h.sm.Put(ctx, KeyOrgs, dec.GrantedBy)
-	h.sm.Put(ctx, KeyLastTouch, time.Now().Unix())
 	slog.InfoContext(ctx, "auth.login", "login", login, "github_id", id, "role", role)
 	h.count(ctx, "success")
 	http.Redirect(w, r, next, http.StatusFound)

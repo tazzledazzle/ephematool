@@ -30,10 +30,9 @@ type Config struct {
 	AllowedTeams []string `env:"ALLOWED_TEAMS" envSeparator:","`
 	AdminLogins  []string `env:"ADMIN_LOGINS" envSeparator:","`
 
-	CookieSecure         bool          `env:"COOKIE_SECURE" envDefault:"false"`
-	SessionIdleTimeout   time.Duration `env:"SESSION_IDLE_TIMEOUT" envDefault:"168h"`
-	SessionLifetime      time.Duration `env:"SESSION_LIFETIME" envDefault:"720h"`
-	SessionTouchInterval time.Duration `env:"SESSION_TOUCH_INTERVAL" envDefault:"5m"`
+	CookieSecure       bool          `env:"COOKIE_SECURE" envDefault:"false"`
+	SessionIdleTimeout time.Duration `env:"SESSION_IDLE_TIMEOUT" envDefault:"168h"`
+	SessionLifetime    time.Duration `env:"SESSION_LIFETIME" envDefault:"720h"`
 
 	PingThrottle      time.Duration `env:"PING_THROTTLE" envDefault:"10s"`
 	HeartbeatInterval time.Duration `env:"HEARTBEAT_INTERVAL" envDefault:"15s"`

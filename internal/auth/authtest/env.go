@@ -151,19 +151,18 @@ func NewEnv(t *testing.T, mutate ...func(*config.Config)) *Env {
 
 	srv := httptest.NewUnstartedServer(nil)
 	cfg := config.Config{
-		PublicBaseURL:        "http://" + srv.Listener.Addr().String(),
-		DatabaseURL:          shared.pgURL,
-		GitHubClientID:       fakegithub.ClientID,
-		GitHubClientSecret:   fakegithub.ClientSecret,
-		GitHubAuthorizeURL:   fakeSrv.URL + "/login/oauth/authorize",
-		GitHubTokenURL:       fakeSrv.URL + "/login/oauth/access_token",
-		GitHubAPIURL:         fakeSrv.URL + "/",
-		AllowedOrgs:          []string{fakegithub.Org},
-		AllowedTeams:         []string{fakegithub.Team},
-		AdminLogins:          []string{"Octo-Admin"},
-		SessionIdleTimeout:   168 * time.Hour,
-		SessionLifetime:      720 * time.Hour,
-		SessionTouchInterval: 5 * time.Minute,
+		PublicBaseURL:      "http://" + srv.Listener.Addr().String(),
+		DatabaseURL:        shared.pgURL,
+		GitHubClientID:     fakegithub.ClientID,
+		GitHubClientSecret: fakegithub.ClientSecret,
+		GitHubAuthorizeURL: fakeSrv.URL + "/login/oauth/authorize",
+		GitHubTokenURL:     fakeSrv.URL + "/login/oauth/access_token",
+		GitHubAPIURL:       fakeSrv.URL + "/",
+		AllowedOrgs:        []string{fakegithub.Org},
+		AllowedTeams:       []string{fakegithub.Team},
+		AdminLogins:        []string{"Octo-Admin"},
+		SessionIdleTimeout: 168 * time.Hour,
+		SessionLifetime:    720 * time.Hour,
 	}
 	for _, m := range mutate {
 		m(&cfg)
