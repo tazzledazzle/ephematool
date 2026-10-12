@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-10-12T03:31:39.395Z"
+last_updated: "2026-10-12T05:02:14.709Z"
 last_activity: 2026-10-12
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 4
+  completed_plans: 6
   percent: 0
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 1 (Telemetry Spine & GitHub Login) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-10-12
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [█████░░░░░] 50%
 | Phase 01 P01 | 40min | 3 tasks | 36 files |
 | Phase 01 P02 | 25min | 3 tasks | 35 files |
 | Phase 01 P03 | 25min | 3 tasks | 15 files |
+| Phase 01 P05 | 45min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase 01]: [01-02] Added web/Dockerfile.dockerignore: web/.dockerignore is ignored with repo-root build context
 - [Phase ?]: 01-03: managed key is label-only; conventions grep gate exempts _test.go
 - [Phase 1]: Build system: convert Makefile to Bazel (bzlmod) incl. stack orchestration; Makefile removed (user request after wave 2) — User-directed; remaining plans 01-05..01-08 command references updated to bazel equivalents
+- [Phase 01]: 01-05: Status page mounts only after /api/me succeeds; /api/me 401 is not counted as ui.api_error
+- [Phase 01]: 01-05: nginx OTLP proxy uses a named upstream (variable proxy_pass needs no resolver)
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-10-12T03:29:36.495Z
+Last session: 2026-10-12T05:02:09.372Z
 Stopped at: Completed 01-01-PLAN.md
 Resume file: None

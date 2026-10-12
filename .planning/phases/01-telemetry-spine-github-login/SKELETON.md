@@ -32,11 +32,11 @@ The skeleton is complete when plan 01-05 is green. Plans 01-06 to 01-08 add vert
 
 ## Stack Touched in Phase 1
 
-- [ ] Project scaffold (framework, build, lint, test runner): plans 01-01 (Go module, Dockerfile, Makefile; the Makefile was later replaced by Bazel), 01-02 (web/, Vitest, Playwright)
-- [ ] Routing, at least one real route: `GET /api/status` (01-01), `/api/auth/github/login|callback`, `/api/me` (01-04); SPA routes `/login`, `/denied`, `/` (01-05)
-- [ ] Database, one real read and one real write: `users` upsert at login and read by `/api/me` (01-04)
-- [ ] UI, one interactive element wired to the API: "Continue with GitHub" -> OAuth -> shell showing `/api/me`; "Sign out" -> `POST /api/auth/logout` (01-05)
-- [ ] Deployment: `bazel run //:up` / `bazel run //:up_fake` runs API, worker, dashboard, Postgres, Redis, Collector, Tempo, Loki, Prometheus, Grafana (01-01, 01-03, 01-05)
+- [x] Project scaffold (framework, build, lint, test runner): plans 01-01 (Go module, Dockerfile, Makefile; the Makefile was later replaced by Bazel), 01-02 (web/, Vitest, Playwright)
+- [x] Routing, at least one real route: `GET /api/status` (01-01), `/api/auth/github/login|callback`, `/api/me` (01-04); SPA routes `/login`, `/denied`, `/` (01-05)
+- [x] Database, one real read and one real write: `users` upsert at login and read by `/api/me` (01-04)
+- [x] UI, one interactive element wired to the API: "Continue with GitHub" -> OAuth -> shell showing `/api/me`; "Sign out" -> `POST /api/auth/logout` (01-05)
+- [x] Deployment: `bazel run //:up` / `bazel run //:up_fake` runs API, worker, dashboard, Postgres, Redis, Collector, Tempo, Loki, Prometheus, Grafana (01-01, 01-03, 01-05)
 
 ## Out of Scope (Deferred to Later Slices)
 
