@@ -28,7 +28,7 @@ esac
 
 cleanup() {
   status=$?
-  (cd "$tmp" && bazel run //:down && bazel shutdown) >/dev/null 2>&1 || true
+  (cd "$tmp/repo" && bazel run //:down && bazel shutdown) >/dev/null 2>&1 || true
   rm -rf "$tmp"
   exit "$status"
 }
