@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-last_updated: 2026-10-12T06:42:57.203Z
+status: planning
+last_updated: "2026-10-12T07:01:44.942Z"
 last_activity: 2026-10-12
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 8
-  completed_plans: 8
+  completed_plans: 9
   percent: 14
-stopped_at: Phase 1 complete (8/8; real GitHub login UAT pending) — ready to discuss Phase 2
 ---
 
 # Project State
@@ -84,10 +83,9 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1]: Pick one label/attribute prefix (ephemeral.* vs ephematool/*) and encode it once.
-- [Phase 2]: Resolve GitHub workflow_dispatch run-ID behavior across API versions; define team/repo ownership model.
-- [Phase 2]: Decide cluster/cloud target (OIDC, CNI NetworkPolicy support, ingress/DNS/TLS) before the secure provisioning work.
-- [Phase 2]: Decide whether SSO/noindex in front of preview URLs is v1.
+- [Phase 1] RESOLVED: label/attribute prefix is ephematool.io/* and ephematool.env.* (Phase 1 D-09).
+- [Phase 2] RESOLVED in 02-CONTEXT.md: cluster target is a local kind cluster with a self-hosted runner (OIDC to a remote cluster deferred, D-02); ownership is the creating user's login with an ALLOWED_REPOS allowlist (D-07, D-08); preview URLs require platform login via an env-bound preview token (ENV-09, D-04).
+- [Phase 2] OPEN for research: verify GitHub workflow_dispatch run-ID behavior across API versions (D-15 handles both outcomes).
 - Phase 1 human check pending: real GitHub OAuth App login (see 01-08-SUMMARY)
 
 ## Deferred Items
@@ -100,6 +98,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-10-12T06:29:20.343Z
-Stopped at: Completed 01-01-PLAN.md
-Resume file: None
+Last session: 2026-10-12T07:01:44.938Z
+Stopped at: Phase 2 context gathered
+Resume file: .planning/phases/02-create-a-secure-preview-environment/02-CONTEXT.md

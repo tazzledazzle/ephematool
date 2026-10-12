@@ -65,7 +65,7 @@ Plans:
 **Goal**: An SRE can create a preview environment from a branch, PR, or ref with one dashboard action, and it comes up isolated, resource-limited, and emitting telemetry, with the whole creation visible as one trace
 **Mode:** mvp
 **Depends on**: Phase 1
-**Requirements**: ENV-01, ENV-02, OBS-02, OBS-03, GRD-01, GRD-04, AUTH-02, AUTH-03
+**Requirements**: ENV-01, ENV-02, ENV-09, OBS-02, OBS-03, GRD-01, GRD-04, AUTH-02, AUTH-03
 **Success Criteria** (what must be TRUE):
 
   1. SRE picks a repo and branch, PR, or ref and an approved template in the dashboard, clicks Create, and a Kubernetes environment is provisioned by a GitHub Actions run
@@ -73,6 +73,7 @@ Plans:
   3. SRE can follow a single trace from the Create click through the GitHub Actions run to the environment's first healthy probe
   4. The new environment's namespace has CPU/memory limits and a default-deny network baseline, and its telemetry arrives tagged with environment id, owner, and template
   5. A viewer cannot create; a creator can; and each create is recorded in an append-only audit log showing who did it and when
+  6. Opening a preview URL while signed out sends the SRE through the platform login, and only an allowed signed-in user reaches the preview; the preview app never receives the platform session cookie
 
 **Plans**: TBD
 **UI hint**: yes

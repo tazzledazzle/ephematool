@@ -34,6 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **ENV-06**: The expiry reaper is idempotent and resumes correctly after a platform restart
 - [ ] **ENV-07**: An environment is destroyed automatically when its PR is closed or merged
 - [ ] **ENV-08**: A PR comment warns of upcoming expiry with the environment URL and expiry time
+- [ ] **ENV-09**: A preview environment's URL is reachable only by a signed-in, allowed platform user, and the platform session is never exposed to preview code
 
 ### Guardrails & Access
 
@@ -97,6 +98,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 2 | Pending |
 | ENV-01 | Phase 2 | Pending |
 | ENV-02 | Phase 2 | Pending |
+| ENV-09 | Phase 2 | Pending |
 | GRD-01 | Phase 2 | Pending |
 | GRD-04 | Phase 2 | Pending |
 | OBS-02 | Phase 2 | Pending |
@@ -120,10 +122,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRD-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 27 total
-- Mapped to phases: 27
+- v1 requirements: 28 total
+- Mapped to phases: 28
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-11*
-*Last updated: 2026-10-11 after initial definition*
+*Last updated: 2026-10-12 after Phase 2 discussion (added ENV-09)*
