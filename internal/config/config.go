@@ -75,7 +75,7 @@ type Config struct {
 	EnvProvisionDeadline time.Duration `env:"ENV_PROVISION_DEADLINE" envDefault:"15m"`
 	EnvPollInitial       time.Duration `env:"ENV_POLL_INITIAL" envDefault:"3s"`
 	EnvPollMax           time.Duration `env:"ENV_POLL_MAX" envDefault:"15s"`
-	EnvProbeEvery        time.Duration `env:"ENV_PROBE_INTERVAL" envDefault:"5s"`
+	EnvProbeInitial      time.Duration `env:"ENV_PROBE_INTERVAL" envDefault:"5s"`
 	EnvProbeWindow       time.Duration `env:"ENV_PROBE_WINDOW" envDefault:"60s"`
 	EnvProbeTimeout      time.Duration `env:"ENV_PROBE_TIMEOUT" envDefault:"2s"`
 	EnvSweepInterval     time.Duration `env:"ENV_SWEEP_INTERVAL" envDefault:"30s"`
@@ -95,7 +95,9 @@ func Load() (Config, error) {
 	c.CreatorLogins = cleanList(c.CreatorLogins)
 	c.CreatorTeams = cleanList(c.CreatorTeams)
 	c.AllowedRepos = cleanList(c.AllowedRepos)
-
+	if err := validate(c); err != nil {
+		return Config{}, err
+	}
 	return c, nil
 }
 
