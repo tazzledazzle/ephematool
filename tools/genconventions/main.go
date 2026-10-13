@@ -1,5 +1,6 @@
 // Command genconventions renders conventions/telemetry.json into Go and
-// TypeScript constants so the D-09 prefixes are defined exactly once.
+// TypeScript constants, and an optional shell-sourceable env file, so the D-09
+// prefixes are defined exactly once.
 package main
 
 import (
@@ -25,26 +26,33 @@ func main() {
 	in := flag.String("in", "", "input JSON")
 	goOut := flag.String("go-out", "", "Go output file")
 	tsOut := flag.String("ts-out", "", "TypeScript output file")
+	envOut := flag.String("env-out", "", "optional shell-sourceable env output file")
 	flag.Parse()
-	if err := run(*in, *goOut, *tsOut); err != nil {
+	if err := run(*in, *goOut, *tsOut, *envOut); err != nil {
 		fmt.Fprintln(os.Stderr, "genconventions:", err)
 		os.Exit(1)
 	}
 }
 
-func run(in, goOut, tsOut string) error {
+func run(in, goOut, tsOut, envOut string) error {
 	raw, err := os.ReadFile(in)
 	if err != nil {
 		return err
 	}
-	g, t, err := generate(raw)
+	g, t, e, err := generate(raw)
 	if err != nil {
 		return err
 	}
 	if err := os.WriteFile(goOut, g, 0o644); err != nil {
 		return err
 	}
-	return os.WriteFile(tsOut, t, 0o644)
+	if err := os.WriteFile(tsOut, t, 0o644); err != nil {
+		return err
+	}
+	if envOut == "" {
+		return nil
+	}
+	return os.WriteFile(envOut, e, 0o644)
 }
 
 // labelSuffix maps the "id" key to "env-id" (D-09); other keys are used as-is.
@@ -64,22 +72,34 @@ func goName(key string) string {
 	return n
 }
 
+// upperSnake turns a JSON key like expiresAt into EXPIRES_AT.
+func upperSnake(key string) string {
+	var b strings.Builder
+	for i, r := range key {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			b.WriteByte('_')
+		}
+		b.WriteRune(r)
+	}
+	return strings.ToUpper(b.String())
+}
+
 // hasAttr reports whether a key also exists as an OTel attribute; managed is label-only.
 func hasAttr(key string) bool { return key != "managed" }
 
-func generate(raw []byte) (goSrc, tsSrc []byte, err error) {
+func generate(raw []byte) (goSrc, tsSrc, envSrc []byte, err error) {
 	var s spec
 	if err := json.Unmarshal(raw, &s); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if !strings.HasSuffix(s.K8sLabelPrefix, "/") {
-		return nil, nil, fmt.Errorf("k8sLabelPrefix %q must end in /", s.K8sLabelPrefix)
+		return nil, nil, nil, fmt.Errorf("k8sLabelPrefix %q must end in /", s.K8sLabelPrefix)
 	}
 	if !strings.HasSuffix(s.OTelAttrPrefix, ".") {
-		return nil, nil, fmt.Errorf("otelAttrPrefix %q must end in .", s.OTelAttrPrefix)
+		return nil, nil, nil, fmt.Errorf("otelAttrPrefix %q must end in .", s.OTelAttrPrefix)
 	}
 	if len(s.Keys) == 0 {
-		return nil, nil, fmt.Errorf("keys must not be empty")
+		return nil, nil, nil, fmt.Errorf("keys must not be empty")
 	}
 	keys := make([]string, 0, len(s.Keys))
 	for k := range s.Keys {
@@ -104,7 +124,7 @@ func generate(raw []byte) (goSrc, tsSrc []byte, err error) {
 	g.WriteString(")\n")
 	goSrc, err = format.Source(g.Bytes())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	var t bytes.Buffer
@@ -121,5 +141,17 @@ func generate(raw []byte) (goSrc, tsSrc []byte, err error) {
 		}
 	}
 	t.WriteString("} as const;\n")
-	return goSrc, t.Bytes(), nil
+
+	// Env file: plain KEY=value lines so `set -a; . file` exports them (shell, Helm, collector).
+	var e bytes.Buffer
+	fmt.Fprintf(&e, "# %s\n", header)
+	for _, k := range keys {
+		fmt.Fprintf(&e, "EPHEMATOOL_LABEL_%s=%s\n", upperSnake(k), s.K8sLabelPrefix+labelSuffix(k, s.Keys[k]))
+	}
+	for _, k := range keys {
+		if hasAttr(k) {
+			fmt.Fprintf(&e, "EPHEMATOOL_ATTR_%s=%s\n", upperSnake(k), s.OTelAttrPrefix+s.Keys[k])
+		}
+	}
+	return goSrc, t.Bytes(), e.Bytes(), nil
 }
