@@ -229,6 +229,10 @@ services:
       ENV_PROBE_TIMEOUT: ${ENV_PROBE_TIMEOUT:-2s}
       ENV_SWEEP_INTERVAL: ${ENV_SWEEP_INTERVAL:-30s}
       ENV_DISPATCH_SPACING: ${ENV_DISPATCH_SPACING:-1s}
+    volumes:
+      - ./.secrets:/run/ephematool-secrets:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       redis:
         condition: service_healthy
