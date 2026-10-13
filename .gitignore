@@ -7,3 +7,8 @@ web/playwright-report
 # Bazel
 /bazel-*
 user.bazelrc
+
+
+# Phase 2 dev secrets and pinned tool binaries
+deploy/.secrets/
+.tools/

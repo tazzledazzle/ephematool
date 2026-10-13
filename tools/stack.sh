@@ -25,6 +25,21 @@ GIT_COMMIT="${GIT_COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo unkno
 BUILT_AT="${BUILT_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 export GIT_COMMIT BUILT_AT
 
+# Dev-only secrets live in deploy/.secrets (git-ignored). Existing files are never
+# overwritten and key material is never printed.
+ensure_secrets() {
+  local dir=deploy/.secrets
+  mkdir -p "$dir"
+  chmod 700 "$dir"
+  if [ ! -f "$dir/preview-token.key" ]; then
+    (umask 077 && openssl rand -hex 32 >"$dir/preview-token.key")
+  fi
+  if [ ! -f "$dir/github-app-dev.pem" ]; then
+    (umask 077 && openssl genrsa -out "$dir/github-app-dev.pem" 2048 2>/dev/null)
+  fi
+}
+
+
 COMPOSE=(docker compose -f deploy/compose.yaml)
 COMPOSE_FAKE=("${COMPOSE[@]}" -f deploy/compose.e2e.yaml)
 
@@ -38,9 +53,11 @@ shift
 
 case "$cmd" in
   up)
+    ensure_secrets
     exec "${COMPOSE[@]}" up --build --wait "$@"
     ;;
   up-fake)
+    ensure_secrets
     exec "${COMPOSE_FAKE[@]}" up --build --wait "$@"
     ;;
   down)
