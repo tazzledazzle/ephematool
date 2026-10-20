@@ -31,7 +31,9 @@ gazelle(name = "gazelle")
 test_suite(
     name = "test_integration",
     tests = [
+        "//internal/audit:audit_test",  # new (section 7)
         "//internal/auth:auth_test",
+        "//internal/store:store_test",  # new
     ],
 )
 

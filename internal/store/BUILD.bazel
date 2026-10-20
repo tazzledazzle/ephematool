@@ -1,16 +1,23 @@
 load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
 
 go_library(
     name = "store",
     srcs = [
+        "audit.sql.go",
         "db.go",
+        "environments.sql.go",
         "generate.go",
         "models.go",
         "store.go",
         "users.sql.go",
     ],
-    embedsrcs = ["migrations/00001_users.sql"],
+    embedsrcs = [
+        "migrations/00001_users.sql",
+        "migrations/00002_app_role_environments.sql",
+        "migrations/00003_audit_events.sql",
+    ],
     importpath = "github.com/ephematool/ephematool/internal/store",
     visibility = ["//:__subpackages__"],
     deps = [
@@ -21,6 +28,7 @@ go_library(
         "@com_github_jackc_pgx_v5//pgxpool",
         "@com_github_jackc_pgx_v5//stdlib",
         "@com_github_pressly_goose_v3//:goose",
+        "@com_github_pressly_goose_v3//lock",
     ],
 )
 
@@ -60,4 +68,18 @@ write_source_files(
     files = {out.removeprefix("_gen/"): out for out in _SQLC_OUTS},
     suggested_update_target = "//:gen",
     visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "store_test",
+    srcs = [
+        "helpers_integration_test.go",
+        "migrate_integration_test.go",
+    ],
+    deps = [
+        ":store",
+        "//internal/testenv",
+        "@com_github_jackc_pgx_v5//pgconn",
+        "@com_github_jackc_pgx_v5//pgtype",
+    ],
 )

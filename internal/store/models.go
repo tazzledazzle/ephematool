@@ -8,6 +8,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AuditEvent struct {
+	ID            pgtype.UUID
+	OccurredAt    pgtype.Timestamptz
+	ActorGithubID int64
+	ActorLogin    string
+	Action        string
+	EnvironmentID pgtype.Text
+	Outcome       string
+	Reason        string
+	TraceID       string
+}
+
+type Environment struct {
+	ID                  string
+	OwnerGithubID       int64
+	OwnerLogin          string
+	Repo                string
+	RefType             string
+	Ref                 string
+	Sha                 string
+	Image               string
+	Template            string
+	ChartVersion        string
+	Size                string
+	Values              []byte
+	Status              string
+	FailureReason       string
+	CorrelationID       string
+	Traceparent         string
+	TraceID             string
+	RunID               pgtype.Int8
+	RunHtmlUrl          string
+	RunEtag             string
+	RunConclusion       string
+	RunConcludedAt      pgtype.Timestamptz
+	DispatchAttemptedAt pgtype.Timestamptz
+	DispatchedAt        pgtype.Timestamptz
+	ProvisionDeadlineAt pgtype.Timestamptz
+	RunningAt           pgtype.Timestamptz
+	CreatedAt           pgtype.Timestamptz
+	UpdatedAt           pgtype.Timestamptz
+	ExpiresAt           pgtype.Timestamptz
+}
+
 type User struct {
 	GithubID     int64
 	Login        string

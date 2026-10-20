@@ -6,11 +6,13 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"io/fs"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/lock"
 )
 
 //go:embed migrations/*.sql
@@ -35,23 +37,42 @@ func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 }
 
 // OpenUntraced creates a small pool without the otelpgx tracer. The status
-// prober uses it so health probes do not create a trace every few seconds.
+// prober and the migrator use it so those calls do not create traces.
 func OpenUntraced(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
 	}
-	cfg.MaxConns = 1
+	cfg.MaxConns = 2 // the session locker holds one connection while goose uses another
 	return pgxpool.NewWithConfig(ctx, cfg)
 }
 
-// Migrate applies the embedded goose migrations.
+// Migrate applies the embedded goose migrations under a Postgres advisory
+// lock (WR-11), so two processes starting together cannot race. It must run
+// with the OWNER connection (MIGRATE_DATABASE_URL), never the app role.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
-	goose.SetBaseFS(migrations)
-	if err := goose.SetDialect("postgres"); err != nil {
-		return err
+	_, err := MigrateVersion(ctx, pool)
+	return err
+}
+
+// MigrateVersion is Migrate plus the resulting schema version, for logging.
+func MigrateVersion(ctx context.Context, pool *pgxpool.Pool) (int64, error) {
+	sub, err := fs.Sub(migrations, "migrations")
+	if err != nil {
+		return 0, err
+	}
+	locker, err := lock.NewPostgresSessionLocker()
+	if err != nil {
+		return 0, err
 	}
 	db := stdlib.OpenDBFromPool(pool)
 	defer db.Close()
-	return goose.UpContext(ctx, db, "migrations")
+	provider, err := goose.NewProvider(goose.DialectPostgres, db, sub, goose.WithSessionLocker(locker))
+	if err != nil {
+		return 0, err
+	}
+	if _, err := provider.Up(ctx); err != nil {
+		return 0, err
+	}
+	return provider.GetDBVersion(ctx)
 }
