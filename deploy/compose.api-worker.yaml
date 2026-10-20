@@ -1,0 +1,147 @@
+# Replace the `api:` and `worker:` services in deploy/compose.yaml with these two blocks.
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: go-runtime
+      args:
+        CMD: api
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILT_AT: ${BUILT_AT:-unknown}
+    environment:
+      OTEL_SERVICE_NAME: ephematool-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+      APP_ENV: ${APP_ENV:-local}
+      HTTP_ADDR: ${HTTP_ADDR:-:8081}
+      # Browser-facing origin: the nginx front door (also the OAuth callback base).
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-http://localhost:3000}
+      # Runtime role (D-24): INSERT/SELECT on audit_events, no DDL. DEV-ONLY credentials; the
+      # role is created by migration 00002. Production sets its own password out of band.
+      DATABASE_URL: ${DATABASE_URL:-postgres://ephematool_app:ephematool_app@postgres:5432/ephematool?sslmode=disable}
+      # Owner role used only for migrations (only the api migrates).
+      MIGRATE_DATABASE_URL: ${MIGRATE_DATABASE_URL:-postgres://ephematool:ephematool@postgres:5432/ephematool?sslmode=disable}
+      MIGRATE_ON_START: ${MIGRATE_ON_START:-true}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_AUTHORIZE_URL: ${GITHUB_AUTHORIZE_URL:-https://github.com/login/oauth/authorize}
+      GITHUB_TOKEN_URL: ${GITHUB_TOKEN_URL:-https://github.com/login/oauth/access_token}
+      GITHUB_API_URL: ${GITHUB_API_URL:-https://api.github.com/}
+      ALLOWED_ORGS: ${ALLOWED_ORGS:-}
+      ALLOWED_TEAMS: ${ALLOWED_TEAMS:-}
+      ADMIN_LOGINS: ${ADMIN_LOGINS:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_IDLE_TIMEOUT: ${SESSION_IDLE_TIMEOUT:-168h}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-720h}
+      PING_THROTTLE: ${PING_THROTTLE:-10s}
+      HEARTBEAT_INTERVAL: ${HEARTBEAT_INTERVAL:-15s}
+      PROBE_INTERVAL: ${PROBE_INTERVAL:-10s}
+      PROBE_TIMEOUT: ${PROBE_TIMEOUT:-2s}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://prometheus:9090}
+      CREATOR_LOGINS: ${CREATOR_LOGINS:-}
+      CREATOR_TEAMS: ${CREATOR_TEAMS:-}
+      ALLOWED_REPOS: ${ALLOWED_REPOS:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-0}
+      GITHUB_APP_INSTALLATION_ID: ${GITHUB_APP_INSTALLATION_ID:-0}
+      GITHUB_APP_PRIVATE_KEY_FILE: ${GITHUB_APP_PRIVATE_KEY_FILE:-/run/ephematool-secrets/github-app.pem}
+      ENVIRONMENTS_REPO: ${ENVIRONMENTS_REPO:-}
+      ENVIRONMENTS_WORKFLOW: ${ENVIRONMENTS_WORKFLOW:-create-environment.yml}
+      ENVIRONMENTS_REF: ${ENVIRONMENTS_REF:-main}
+      GHCR_BASE_URL: ${GHCR_BASE_URL:-https://ghcr.io}
+      IMAGE_TAG_FORMAT: ${IMAGE_TAG_FORMAT:-{sha}}
+      PREVIEW_DOMAIN: ${PREVIEW_DOMAIN:-preview.localhost}
+      PREVIEW_PORT: ${PREVIEW_PORT:-8088}
+      PREVIEW_SCHEME: ${PREVIEW_SCHEME:-http}
+      PREVIEW_GATEWAY_ADDR: ${PREVIEW_GATEWAY_ADDR:-host.docker.internal:8088}
+      PREVIEW_TOKEN_KEY_FILE: ${PREVIEW_TOKEN_KEY_FILE:-/run/ephematool-secrets/preview-token.key}
+      PREVIEW_TICKET_TTL: ${PREVIEW_TICKET_TTL:-60s}
+      PREVIEW_COOKIE_TTL: ${PREVIEW_COOKIE_TTL:-30m}
+      ENV_DEFAULT_TTL: ${ENV_DEFAULT_TTL:-24h}
+      ENV_PROVISION_DEADLINE: ${ENV_PROVISION_DEADLINE:-15m}
+      ENV_POLL_INITIAL: ${ENV_POLL_INITIAL:-3s}
+      ENV_POLL_MAX: ${ENV_POLL_MAX:-15s}
+      ENV_PROBE_INTERVAL: ${ENV_PROBE_INTERVAL:-5s}
+      ENV_PROBE_WINDOW: ${ENV_PROBE_WINDOW:-60s}
+      ENV_PROBE_TIMEOUT: ${ENV_PROBE_TIMEOUT:-2s}
+      ENV_SWEEP_INTERVAL: ${ENV_SWEEP_INTERVAL:-30s}
+      ENV_DISPATCH_SPACING: ${ENV_DISPATCH_SPACING:-1s}
+    volumes:
+      - ./.secrets:/run/ephematool-secrets:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: go-runtime
+      args:
+        CMD: worker
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILT_AT: ${BUILT_AT:-unknown}
+    # The worker binary has no subcommands; ignore the image default CMD.
+    command: []
+    environment:
+      OTEL_SERVICE_NAME: ephematool-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+      APP_ENV: ${APP_ENV:-local}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      # Same restricted app role as the api. The worker never migrates.
+      DATABASE_URL: ${DATABASE_URL:-postgres://ephematool_app:ephematool_app@postgres:5432/ephematool?sslmode=disable}
+      HEARTBEAT_INTERVAL: ${HEARTBEAT_INTERVAL:-15s}
+      GITHUB_API_URL: ${GITHUB_API_URL:-https://api.github.com/}
+      CREATOR_LOGINS: ${CREATOR_LOGINS:-}
+      CREATOR_TEAMS: ${CREATOR_TEAMS:-}
+      ALLOWED_REPOS: ${ALLOWED_REPOS:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-0}
+      GITHUB_APP_INSTALLATION_ID: ${GITHUB_APP_INSTALLATION_ID:-0}
+      GITHUB_APP_PRIVATE_KEY_FILE: ${GITHUB_APP_PRIVATE_KEY_FILE:-/run/ephematool-secrets/github-app.pem}
+      ENVIRONMENTS_REPO: ${ENVIRONMENTS_REPO:-}
+      ENVIRONMENTS_WORKFLOW: ${ENVIRONMENTS_WORKFLOW:-create-environment.yml}
+      ENVIRONMENTS_REF: ${ENVIRONMENTS_REF:-main}
+      GHCR_BASE_URL: ${GHCR_BASE_URL:-https://ghcr.io}
+      IMAGE_TAG_FORMAT: ${IMAGE_TAG_FORMAT:-{sha}}
+      PREVIEW_DOMAIN: ${PREVIEW_DOMAIN:-preview.localhost}
+      PREVIEW_PORT: ${PREVIEW_PORT:-8088}
+      PREVIEW_SCHEME: ${PREVIEW_SCHEME:-http}
+      PREVIEW_GATEWAY_ADDR: ${PREVIEW_GATEWAY_ADDR:-host.docker.internal:8088}
+      PREVIEW_TOKEN_KEY_FILE: ${PREVIEW_TOKEN_KEY_FILE:-/run/ephematool-secrets/preview-token.key}
+      PREVIEW_TICKET_TTL: ${PREVIEW_TICKET_TTL:-60s}
+      PREVIEW_COOKIE_TTL: ${PREVIEW_COOKIE_TTL:-30m}
+      ENV_DEFAULT_TTL: ${ENV_DEFAULT_TTL:-24h}
+      ENV_PROVISION_DEADLINE: ${ENV_PROVISION_DEADLINE:-15m}
+      ENV_POLL_INITIAL: ${ENV_POLL_INITIAL:-3s}
+      ENV_POLL_MAX: ${ENV_POLL_MAX:-15s}
+      ENV_PROBE_INTERVAL: ${ENV_PROBE_INTERVAL:-5s}
+      ENV_PROBE_WINDOW: ${ENV_PROBE_WINDOW:-60s}
+      ENV_PROBE_TIMEOUT: ${ENV_PROBE_TIMEOUT:-2s}
+      ENV_SWEEP_INTERVAL: ${ENV_SWEEP_INTERVAL:-30s}
+      ENV_DISPATCH_SPACING: ${ENV_DISPATCH_SPACING:-1s}
+    volumes:
+      - ./.secrets:/run/ephematool-secrets:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started

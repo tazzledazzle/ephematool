@@ -27,8 +27,9 @@ genrule(
     outs = [
         "_gen/conventions.gen.go",
         "_gen/conventions.gen.ts",
+        "_gen/conventions.gen.env",
     ],
-    cmd = "$(execpath //tools/genconventions) -in $(execpath //conventions:telemetry.json) -go-out $(execpath _gen/conventions.gen.go) -ts-out $(execpath _gen/conventions.gen.ts)",
+    cmd = "$(execpath //tools/genconventions) -in $(execpath //conventions:telemetry.json) -go-out $(execpath _gen/conventions.gen.go) -ts-out $(execpath _gen/conventions.gen.ts) -env-out $(execpath _gen/conventions.gen.env)",
     tools = ["//tools/genconventions"],
     visibility = ["//:__subpackages__"],
 )

@@ -8,27 +8,33 @@ import (
 	"time"
 )
 
-type durationCheck struct {
-	envName string
-	value   time.Duration
-}
-
 var (
-	orgSlugRe = regexp.MustCompile(`^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$`) //org/team and org/repo
-	domainRe  = regexp.MustCompile(`^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$`)
+	// orgSlugRe matches org/team-slug and org/repo-name entries (WR-09).
+	orgSlugRe = regexp.MustCompile(`^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$`)
+	// domainRe is a conservative lowercase DNS name; preview hosts are built from it.
+	domainRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$`)
 )
 
-// heartbeatMax is half the 45ss heartbeat TTL in internal/queue
+// heartbeatMax is half of the 45s heartbeat TTL in internal/queue. A heartbeat
+// interval at or above it lets the status page flap to "down" between beats.
 const heartbeatMax = 22500 * time.Millisecond
 
-// validate returns the first violated rule, naming the env variable.
+// validate returns the first violated rule, naming the env variable (WR-03,
+// WR-08, WR-09). Order matters: positivity first, so a zero duration is
+// reported as "must be > 0" and never as a confusing relational error.
 func validate(c Config) error {
-
-	checks := []durationCheck{
+	// Rule group 1: every duration is strictly positive. PING_THROTTLE is the
+	// one exception (0 disables throttling; the e2e overlay relies on it), so
+	// it is checked separately for >= 0.
+	positive := []struct {
+		name  string
+		value time.Duration
+	}{
 		{"SESSION_IDLE_TIMEOUT", c.SessionIdleTimeout},
 		{"SESSION_LIFETIME", c.SessionLifetime},
 		{"HEARTBEAT_INTERVAL", c.HeartbeatInterval},
 		{"PROBE_INTERVAL", c.ProbeInterval},
+		{"PROBE_TIMEOUT", c.ProbeTimeout},
 		{"PREVIEW_TICKET_TTL", c.PreviewTicketTTL},
 		{"PREVIEW_COOKIE_TTL", c.PreviewCookieTTL},
 		{"ENV_DEFAULT_TTL", c.EnvDefaultTTL},
@@ -41,11 +47,16 @@ func validate(c Config) error {
 		{"ENV_SWEEP_INTERVAL", c.EnvSweepInterval},
 		{"ENV_DISPATCH_SPACING", c.EnvDispatchSpacing},
 	}
-	// Rule group 1: durations must be positive (PING_THROTTLE may be 0).
-	// TODO
+	for _, p := range positive {
+		if p.value <= 0 {
+			return fmt.Errorf("%s must be > 0", p.name)
+		}
+	}
+	if c.PingThrottle < 0 {
+		return fmt.Errorf("PING_THROTTLE must be >= 0")
+	}
 
-	// Rule group 2: relationships between durations
-	// TODO
+	// Rule group 2: relationships between durations.
 	switch {
 	case c.SessionIdleTimeout > c.SessionLifetime:
 		return fmt.Errorf("SESSION_IDLE_TIMEOUT must be <= SESSION_LIFETIME")
@@ -55,15 +66,15 @@ func validate(c Config) error {
 		return fmt.Errorf("HEARTBEAT_INTERVAL must be < %s (half the heartbeat TTL)", heartbeatMax)
 	case c.EnvPollInitial > c.EnvPollMax:
 		return fmt.Errorf("ENV_POLL_INITIAL must be <= ENV_POLL_MAX")
+	case c.EnvProbeTimeout >= c.EnvProbeInitial:
+		return fmt.Errorf("ENV_PROBE_TIMEOUT must be < ENV_PROBE_INTERVAL")
 	case c.EnvProbeInitial >= c.EnvProbeWindow:
 		return fmt.Errorf("ENV_PROBE_INTERVAL must be < ENV_PROBE_WINDOW")
-	case c.EnvProbeTimeout >= c.EnvProbeInitial:
-		return fmt.Errorf("ENV_PROBE_TIMEOUT must be < ENV_PROBE_INITIAL")
 	case c.PreviewTicketTTL > 5*time.Minute:
 		return fmt.Errorf("PREVIEW_TICKET_TTL must be <= 5m")
 	}
-	// Rule group 3: formats (teams, repos, domain, tag format, scheme, port).
-	// TODO
+
+	// Rule group 3: formats.
 	lists := []struct {
 		name string
 		vals []string
@@ -94,19 +105,13 @@ func validate(c Config) error {
 	if !domainRe.MatchString(c.PreviewDomain) {
 		return fmt.Errorf("PREVIEW_DOMAIN %q is not a valid lowercase domain", c.PreviewDomain)
 	}
-	// Rule group 4: WR-03, HTTPS requires COOKIE_SECURE.
-	// TODO
+
+	// Rule group 4 (WR-03): a Secure-less cookie must never be served over TLS.
 	if u, err := url.Parse(c.PublicBaseURL); err == nil && u.Scheme == "https" && !c.CookieSecure {
 		return fmt.Errorf("COOKIE_SECURE must be true when PUBLIC_BASE_URL is https")
 	}
 	if c.PreviewScheme == "https" && !c.CookieSecure {
 		return fmt.Errorf("COOKIE_SECURE must be true when PREVIEW_SCHEME is https")
-	}
-
-	for _, ch := range checks {
-		if ch.value <= 0 {
-			return fmt.Errorf("%s must be > 0", ch.envName)
-		}
 	}
 	return nil
 }

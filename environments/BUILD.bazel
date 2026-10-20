@@ -1,0 +1,13 @@
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+
+# conventions.gen.env is generated from conventions/telemetry.json and committed. Shell,
+# YAML and Helm consumers read the label/attribute keys from it instead of hand-writing them
+# (the D-09 grep gate would reject a hand-written copy). //:check_gen fails when it is stale.
+write_source_files(
+    name = "gen",
+    files = {"conventions.gen.env": "//internal/conventions:_gen/conventions.gen.env"},
+    suggested_update_target = "//:gen",
+    visibility = ["//:__subpackages__"],
+)
+
+exports_files(["conventions.gen.env"])
