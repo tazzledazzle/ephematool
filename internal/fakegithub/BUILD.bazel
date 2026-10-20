@@ -3,13 +3,23 @@ load("//tools/bzl:go.bzl", "go_test")
 
 go_library(
     name = "fakegithub",
-    srcs = ["server.go"],
+    srcs = [
+        "actions.go",
+        "app.go",
+        "registry.go",
+        "repo.go",
+        "server.go",
+    ],
     importpath = "github.com/ephematool/ephematool/internal/fakegithub",
     visibility = ["//:__subpackages__"],
 )
 
 go_test(
     name = "fakegithub_test",
-    srcs = ["server_test.go"],
+    srcs = [
+        "actions_test.go",
+        "repos_test.go",
+        "server_test.go",
+    ],
     embed = [":fakegithub"],
 )

@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -26,6 +27,8 @@ const (
 	// Org is the fixture organization; Team is the fixture "org/slug" team.
 	Org  = "ephematool-e2e"
 	Team = "partner-org/sre"
+	// CreatorsTeam is the fixture "org/slug" whose members may create environments.
+	CreatorsTeam = "ephematool-e2e/creators"
 )
 
 // Fixture describes one fake GitHub user.
@@ -49,6 +52,10 @@ func Fixtures() []Fixture {
 		{Login: "octo-pending", ID: 1004, Orgs: map[string]string{Org: "pending"}},
 		{Login: "octo-outsider", ID: 1005},
 		{Login: "octo-forbidden", ID: 1006, OrgForbidden: true},
+		// Phase 2: members of the creators team. octo-demoted is mutated by tests
+		// through SetTeamMembership to prove the role is re-checked per request.
+		{Login: "octo-creator", ID: 1007, Orgs: map[string]string{Org: "active"}, Teams: map[string]string{CreatorsTeam: "active"}},
+		{Login: "octo-demoted", ID: 1008, Orgs: map[string]string{Org: "active"}, Teams: map[string]string{CreatorsTeam: "active"}},
 	}
 }
 
@@ -65,6 +72,15 @@ type Server struct {
 	mu            sync.Mutex
 	codes         map[string]grant
 	lastAuthorize url.Values
+
+	// Phase 2 state, all guarded by mu. Defined in repos.go and actions.go.
+	scenarios  map[string]string // known commit sha -> scenario (success, fail, ...)
+	instTokens int               // counter for fake-inst-* tokens
+	runs       map[int64]*run
+	nextRunID  int64
+	dispatches []Dispatch
+	now        func() time.Time
+	stopStep   chan struct{}
 }
 
 // New returns a fake GitHub with the canonical fixtures.
@@ -73,6 +89,11 @@ func New() *Server {
 		mux:      http.NewServeMux(),
 		fixtures: map[string]Fixture{},
 		codes:    map[string]grant{},
+
+		scenarios: map[string]string{},
+		runs:      map[int64]*run{},
+		nextRunID: 9000000,
+		now:       time.Now,
 	}
 	for _, f := range Fixtures() {
 		s.fixtures[f.Login] = f
@@ -82,6 +103,11 @@ func New() *Server {
 	s.mux.HandleFunc("GET /user", s.user)
 	s.mux.HandleFunc("GET /user/memberships/orgs/{org}", s.orgMembership)
 	s.mux.HandleFunc("GET /orgs/{org}/teams/{slug}/memberships/{login}", s.teamMembership)
+	s.mux.HandleFunc("PUT /__fake/teams/{org}/{slug}/memberships/{login}", s.setTeam)
+	s.registerApp()
+	s.registerRepos()
+	s.registerRegistry()
+	s.registerActions()
 	return s
 }
 
@@ -135,7 +161,10 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if login := q.Get("login"); login != "" {
-		if _, ok := s.fixtures[login]; !ok {
+		s.mu.Lock()
+		_, known := s.fixtures[login]
+		s.mu.Unlock()
+		if !known {
 			http.Error(w, "unknown fixture", http.StatusBadRequest)
 			return
 		}
@@ -147,10 +176,12 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.mu.Lock()
 	logins := make([]string, 0, len(s.fixtures))
 	for l := range s.fixtures {
 		logins = append(logins, l)
 	}
+	s.mu.Unlock()
 	sort.Strings(logins)
 	var b strings.Builder
 	b.WriteString("<!doctype html><title>Fake GitHub</title><h1>Authorize (fake GitHub)</h1>")
@@ -210,7 +241,9 @@ func (s *Server) accessToken(w http.ResponseWriter, r *http.Request) {
 func (s *Server) caller(w http.ResponseWriter, r *http.Request) (Fixture, bool) {
 	tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	tok = strings.TrimPrefix(tok, "token ")
+	s.mu.Lock()
 	f, ok := s.fixtures[strings.TrimPrefix(tok, "fake-token-")]
+	s.mu.Unlock()
 	if !ok || !strings.HasPrefix(tok, "fake-token-") {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"message": "Bad credentials"})
 		return Fixture{}, false
@@ -258,18 +291,50 @@ func (s *Server) orgMembership(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) teamMembership(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.caller(w, r); !ok {
+	if !s.appOrUser(w, r) { // installation tokens (platform) or user tokens (login flow)
 		return
 	}
+	s.mu.Lock()
 	f, ok := s.fixtures[r.PathValue("login")]
-	if !ok {
-		notFound(w)
-		return
-	}
-	state, ok := f.Teams[r.PathValue("org")+"/"+r.PathValue("slug")]
-	if !ok {
+	state, member := f.Teams[r.PathValue("org")+"/"+r.PathValue("slug")]
+	s.mu.Unlock()
+	if !ok || !member || state == "none" {
 		notFound(w)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"state": state, "role": "member"})
+}
+
+// SetTeamMembership changes a fixture's membership in "org/slug". state "none"
+// removes it (the next GET answers 404); anything else is stored as given.
+func (s *Server) SetTeamMembership(org, slug, login, state string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	f, ok := s.fixtures[login]
+	if !ok {
+		return
+	}
+	teams := map[string]string{}
+	for k, v := range f.Teams {
+		teams[k] = v
+	}
+	if state == "none" {
+		delete(teams, org+"/"+slug)
+	} else {
+		teams[org+"/"+slug] = state
+	}
+	f.Teams = teams
+	s.fixtures[login] = f
+}
+
+func (s *Server) setTeam(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		State string `json:"state"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.State == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"message": "state required"})
+		return
+	}
+	s.SetTeamMembership(r.PathValue("org"), r.PathValue("slug"), r.PathValue("login"), body.State)
+	w.WriteHeader(http.StatusNoContent)
 }

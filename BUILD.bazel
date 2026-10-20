@@ -40,7 +40,7 @@ test_suite(
 # bazel test //:check_gen -- fail if any committed generated file is stale (drift check)
 _GEN_PACKAGES = [
     "//api",
-    "//environments",          # new
+    "//environments",  # new
     "//internal/conventions",
     "//internal/store",
     "//web",
