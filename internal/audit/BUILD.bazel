@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "audit",
+    srcs = [
+        "audit.go",
+        "cursor.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/audit",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/store",
+        "@com_github_jackc_pgx_v5//pgtype",
+        "@io_opentelemetry_go_otel_trace//:trace",
+    ],
+)
+
+go_test(
+    name = "audit_test",
+    srcs = [
+        "audit_integration_test.go",
+        "audit_test.go",
+        "cursor_test.go",
+    ],
+    embed = [":audit"],
+    deps = [
+        "//internal/testenv",
+        "@io_opentelemetry_go_otel_sdk//trace",
+        "@io_opentelemetry_go_otel_sdk//trace/tracetest",
+    ],
+)

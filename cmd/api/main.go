@@ -23,6 +23,7 @@ import (
 	"github.com/ephematool/ephematool/internal/auth"
 	"github.com/ephematool/ephematool/internal/buildinfo"
 	"github.com/ephematool/ephematool/internal/config"
+	"github.com/ephematool/ephematool/internal/ghapp"
 	"github.com/ephematool/ephematool/internal/httpapi"
 	"github.com/ephematool/ephematool/internal/queue"
 	"github.com/ephematool/ephematool/internal/status"
@@ -78,12 +79,23 @@ func migrate() error {
 	if err != nil {
 		return err
 	}
-	pool, err := store.Open(ctx, cfg.DatabaseURL)
+	return runMigrations(ctx, cfg)
+}
+
+// runMigrations applies migrations with the OWNER connection (D-24). The API's
+// runtime pool uses the restricted ephematool_app role and can never run DDL.
+func runMigrations(ctx context.Context, cfg config.Config) error {
+	pool, err := store.OpenUntraced(ctx, cfg.MigrationURL())
 	if err != nil {
-		return err
+		return fmt.Errorf("open migration connection: %w", err)
 	}
 	defer pool.Close()
-	return store.Migrate(ctx, pool)
+	version, err := store.MigrateVersion(ctx, pool)
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+	slog.InfoContext(ctx, "db.migrated", "version", version) // never log the URL
+	return nil
 }
 
 func serve() error {
@@ -120,18 +132,34 @@ func serve() error {
 	}
 	defer rdb.Close()
 
+	// Migrate first (owner role), then open the runtime pool (app role).
+	if cfg.MigrateOnStart {
+		if err := runMigrations(ctx, cfg); err != nil {
+			return err
+		}
+	}
 	pool, err := store.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
 	defer pool.Close()
-	if cfg.MigrateOnStart {
-		if err := store.Migrate(ctx, pool); err != nil {
-			return fmt.Errorf("migrate: %w", err)
-		}
-	}
 	queries := store.New(pool)
 	sessions := auth.NewSessionManager(rdb, cfg)
+
+	// GitHub App client: optional. Without it creator teams cannot be checked
+	// and (from 2b) creating environments is disabled with a clear message.
+	gh, err := ghapp.New(cfg)
+	switch {
+	case errors.Is(err, ghapp.ErrNotConfigured):
+		slog.WarnContext(ctx, "ghapp.not_configured", "hint", "set GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY_FILE")
+		gh = nil
+	case err != nil:
+		return err
+	}
+	authHandlers := auth.NewHandlers(cfg, sessions, queries)
+	if gh != nil { // avoid a typed-nil in the TeamChecker interface
+		authHandlers.Roles = auth.NewRoleResolver(cfg, gh)
+	}
 
 	q := queue.NewClient(cfg.RedisAddr)
 	defer q.Close()
@@ -145,7 +173,7 @@ func serve() error {
 
 	handler, _ := httpapi.New(httpapi.Deps{
 		Config: cfg, Redis: rdb, Queue: q, Status: prober,
-		Sessions: sessions, Queries: queries, Auth: auth.NewHandlers(cfg, sessions, queries),
+		Sessions: sessions, Queries: queries, Auth: authHandlers,
 	})
 	srv := &http.Server{Addr: cfg.HTTPAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 
