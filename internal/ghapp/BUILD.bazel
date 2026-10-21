@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:go.bzl", "go_test")
+
+go_library(
+    name = "ghapp",
+    srcs = [
+        "actions.go",
+        "ghapp.go",
+        "image.go",
+        "refs.go",
+        "token.go",
+        "validate.go",
+    ],
+    importpath = "github.com/ephematool/ephematool/internal/ghapp",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/config",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@com_github_google_go_github_v92//github",
+        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
+    ],
+)
+
+go_test(
+    name = "ghapp_test",
+    srcs = [
+        "actions_test.go",
+        "ghapp_test.go",
+        "refs_test.go",
+        "validate_test.go",
+    ],
+    embed = [":ghapp"],
+    deps = [
+        "//internal/config",
+        "//internal/fakegithub",
+    ],
+)

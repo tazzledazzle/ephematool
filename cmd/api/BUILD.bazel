@@ -9,6 +9,7 @@ go_library(
         "//internal/auth",
         "//internal/buildinfo",
         "//internal/config",
+        "//internal/ghapp",
         "//internal/httpapi",
         "//internal/queue",
         "//internal/status",
