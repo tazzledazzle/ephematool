@@ -68,15 +68,3 @@ func TestAllowlist(t *testing.T) {
 		})
 	}
 }
-
-func TestRole(t *testing.T) {
-	if RoleFor("octo-admin", []string{"Octo-Admin"}) != "admin" {
-		t.Error("case-insensitive admin")
-	}
-	if RoleFor("octo-viewer", []string{"Octo-Admin"}) != "viewer" {
-		t.Error("viewer")
-	}
-	if RoleFor("x", nil) != "viewer" {
-		t.Error("nil admins")
-	}
-}

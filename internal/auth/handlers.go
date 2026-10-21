@@ -36,6 +36,10 @@ type Handlers struct {
 	hc     *http.Client
 	allow  Allowlist
 	logins metric.Int64Counter
+
+	// Roles resolves a login to a role. cmd/api sets it with the GitHub App
+	// client as its TeamChecker; the default has no team checker.
+	Roles RoleResolver
 }
 
 // NewHandlers builds the handlers. sm and q may be nil when only the OpenAPI
@@ -49,6 +53,7 @@ func NewHandlers(cfg config.Config, sm *scs.SessionManager, q *store.Queries) *H
 		hc:     newHTTPClient(),
 		allow:  Allowlist{Orgs: cfg.AllowedOrgs, Teams: cfg.AllowedTeams},
 		logins: logins,
+		Roles:  NewRoleResolver(cfg, nil),
 	}
 }
 
@@ -160,7 +165,24 @@ func (h *Handlers) callback(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, "user_upsert")
 		return
 	}
-	role := RoleFor(login, h.cfg.AdminLogins)
+	// The role stored in the session is only a login-time hint for the UI. The
+	// authoritative role is re-resolved on every request (RequireRole, /api/me).
+	// If no App token checker is configured, fall back to the user's own token
+	// so team-based creators still see the right hint.
+	roles := h.Roles
+	if roles.Teams == nil {
+		roles.Teams = userTeamChecker{mc: GitHubMembershipClient{Client: gh}}
+	}
+	role, rerr := roles.Resolve(ctx, login)
+	if rerr != nil {
+		slog.WarnContext(ctx, "auth.role_check_failed", "login", login, "error", rerr.Error())
+	}
+	// WR-10: drop everything from any previous identity before issuing the new
+	// session, so no stale key can survive an account switch in the same browser.
+	if err := h.sm.Clear(ctx); err != nil {
+		h.fail(w, r, "session_clear")
+		return
+	}
 	if err := h.sm.RenewToken(ctx); err != nil { // session fixation defense
 		h.fail(w, r, "session_renew")
 		return
@@ -179,7 +201,7 @@ func (h *Handlers) callback(w http.ResponseWriter, r *http.Request) {
 type MeBody struct {
 	Login     string   `json:"login"`
 	AvatarURL string   `json:"avatarUrl"`
-	Role      string   `json:"role" enum:"admin,viewer"`
+	Role      string   `json:"role" enum:"admin,creator,viewer"`
 	Orgs      []string `json:"orgs"`
 }
 
@@ -203,6 +225,23 @@ func nonNil(in []string) []string {
 	return in
 }
 
+// currentRole is the caller's role right now. With the App configured it is
+// resolved live (a demotion shows on the next page load). Without it, the
+// login-time hint is kept, but never below what the config alone proves.
+func (h *Handlers) currentRole(ctx context.Context, login string) string {
+	role, err := h.Roles.Resolve(ctx, login)
+	if err != nil {
+		slog.WarnContext(ctx, "auth.role_check_failed", "login", login, "error", err.Error())
+		return RoleViewer // fail closed
+	}
+	if h.Roles.Teams == nil {
+		if hint := h.sm.GetString(ctx, KeyRole); RoleAtLeast(hint, role) {
+			return hint
+		}
+	}
+	return role
+}
+
 // Register wires the plain OAuth routes (via wrap) and the Huma operations.
 func Register(api huma.API, mux *http.ServeMux, h *Handlers, wrap RouteWrapper) {
 	oa := api.OpenAPI()
@@ -224,22 +263,21 @@ func Register(api huma.API, mux *http.ServeMux, h *Handlers, wrap RouteWrapper) 
 	}, func(ctx context.Context, _ *struct{}) (*MeResponse, error) {
 		orgs, _ := h.sm.Get(ctx, KeyOrgs).([]string)
 		id := h.sm.GetInt64(ctx, KeyUserID)
+		login, avatar := h.sm.GetString(ctx, KeyLogin), h.sm.GetString(ctx, KeyAvatarURL)
 		if h.q != nil { // read the persisted user (first real DB read)
 			if u, err := h.q.GetUserByGithubID(ctx, id); err == nil {
-				return &MeResponse{Body: MeBody{
-					Login: u.Login, AvatarURL: u.AvatarUrl, Role: h.sm.GetString(ctx, KeyRole), Orgs: nonNil(orgs),
-				}}, nil
+				login, avatar = u.Login, u.AvatarUrl
 			}
 		}
 		return &MeResponse{Body: MeBody{
-			Login: h.sm.GetString(ctx, KeyLogin), AvatarURL: h.sm.GetString(ctx, KeyAvatarURL),
-			Role: h.sm.GetString(ctx, KeyRole), Orgs: nonNil(orgs),
+			Login: login, AvatarURL: avatar, Role: h.currentRole(ctx, login), Orgs: nonNil(orgs),
 		}}, nil
 	})
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-auth-config", Method: http.MethodGet, Path: "/api/auth/config",
-		Summary: "Public sign-in configuration",
+		Summary:    "Public sign-in configuration",
+		Extensions: map[string]any{PublicExtension: true}, // login page needs it before sign-in
 	}, func(context.Context, *struct{}) (*ConfigResponse, error) {
 		return &ConfigResponse{Body: ConfigBody{
 			GitHubConfigured: h.cfg.GitHubConfigured(),
@@ -251,6 +289,7 @@ func Register(api huma.API, mux *http.ServeMux, h *Handlers, wrap RouteWrapper) 
 	huma.Register(api, huma.Operation{
 		OperationID: "post-auth-logout", Method: http.MethodPost, Path: "/api/auth/logout",
 		Summary: "Sign out", DefaultStatus: http.StatusNoContent,
+		Extensions: map[string]any{PublicExtension: true}, // idempotent: logging out twice must not 401
 	}, func(ctx context.Context, _ *struct{}) (*struct{}, error) {
 		if h.sm != nil {
 			if err := h.sm.Destroy(ctx); err != nil {

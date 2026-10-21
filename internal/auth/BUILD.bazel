@@ -36,6 +36,8 @@ go_test(
         "allowlist_test.go",
         "next_test.go",
         "oauth_integration_test.go",
+        "role_integration_test.go",
+        "role_test.go",
         "session_test.go",
     ],
     embed = [":auth"],

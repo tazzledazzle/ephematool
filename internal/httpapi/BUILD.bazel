@@ -29,9 +29,13 @@ go_library(
 
 go_test(
     name = "httpapi_test",
-    srcs = ["middleware_test.go"],
+    srcs = [
+        "middleware_test.go",
+        "security_test.go",
+    ],
     embed = [":httpapi"],
     deps = [
+        "//internal/auth",
         "//internal/config",
         "@com_github_danielgtaylor_huma_v2//:huma",
         "@com_github_danielgtaylor_huma_v2//adapters/humago",
